@@ -38,7 +38,7 @@ export const handler = async (event) => {
       };
     }
 
-    const url = new URL("https://graph.facebook.com/v19.0/oauth/access_token");
+    const url = new URL("https://api.instagram.com/oauth/access_token");
     url.searchParams.set("client_id", app_id);
     url.searchParams.set("redirect_uri", redirect_uri);
     url.searchParams.set("client_secret", appSecret);
@@ -56,7 +56,7 @@ export const handler = async (event) => {
     }
 
     // Troca o short-lived token pelo long-lived token (60 dias)
-    const longUrl = new URL("https://graph.facebook.com/v19.0/oauth/access_token");
+    const longUrl = new URL("https://api.instagram.com/oauth/access_token");
     longUrl.searchParams.set("grant_type", "fb_exchange_token");
     longUrl.searchParams.set("client_id", app_id);
     longUrl.searchParams.set("client_secret", appSecret);
