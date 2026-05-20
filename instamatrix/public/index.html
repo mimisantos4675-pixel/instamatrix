@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>InstaMatrix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080810;--surface:#0f0f1a;--surface2:#141424;--surface3:#1a1a2e;
+  --border:#1e1e32;--border2:#252540;
+  --accent:#6366f1;--accent2:#818cf8;--accent-dim:rgba(99,102,241,0.12);--accent-glow:rgba(99,102,241,0.25);
+  --green:#10b981;--green-dim:rgba(16,185,129,0.12);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.1);
+  --yellow:#f59e0b;--yellow-dim:rgba(245,158,11,0.1);
+  --blue:#3b82f6;--blue-dim:rgba(59,130,246,0.1);
+  --text:#f1f1ff;--text2:#a0a0c0;--text3:#60607a;
+  --radius:10px;--radius2:14px;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter',sans-serif;
+  --sidebar:240px;
+  --nav-h:60px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;font-family:inherit;border:none;outline:none}
+input,textarea,select{font-family:inherit;outline:none}
+a{color:inherit;text-decoration:none}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ── LAYOUT ─────────────────────────────────────── */
+#app{display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ─────────────────────────────────────── */
+#sidebar{
+  width:var(--sidebar);flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  height:100vh;overflow:hidden;
+  transition:width .25s ease,transform .25s ease;
+  position:relative;z-index:30;
+}
+.sb-logo{
+  padding:22px 20px 18px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+}
+.sb-logo-icon{
+  width:32px;height:32px;border-radius:8px;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.sb-logo-icon svg{width:17px;height:17px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.sb-logo-text h1{font-size:15px;font-weight:700;letter-spacing:-.3px;color:var(--text)}
+.sb-logo-text p{font-size:10px;color:var(--text3);margin-top:1px;font-weight:500;letter-spacing:.5px;text-transform:uppercase}
+nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-section{padding:16px 16px 6px;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 16px;margin:1px 8px;
+  border-radius:var(--radius);
+  color:var(--text2);font-size:13px;font-weight:500;
+  cursor:pointer;transition:all .15s;
+  border:1px solid transparent;
+}
+.nav-item:hover{color:var(--text);background:var(--surface3)}
+.nav-item.active{color:var(--accent2);background:var(--accent-dim);border-color:rgba(99,102,241,.2)}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;min-width:20px;text-align:center}
+.sb-footer{padding:14px 16px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-weight:500;letter-spacing:.3px}
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:25;backdrop-filter:blur(2px)}
+
+/* ── MAIN ─────────────────────────────────────── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#mobile-topbar{
+  display:none;height:var(--nav-h);
+  background:var(--surface);border-bottom:1px solid var(--border);
+  align-items:center;justify-content:space-between;
+  padding:0 16px;flex-shrink:0;
+}
+.topbar-title{font-size:15px;font-weight:700}
+.hamburger{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.hamburger svg{width:18px;height:18px;stroke:var(--text2);fill:none;stroke-width:2;stroke-linecap:round}
+#content{flex:1;overflow-y:auto;padding:28px 32px}
+
+/* ── PAGE ─────────────────────────────────────── */
+.page{display:none;max-width:900px}
+.page.active{display:block}
+.page-header{margin-bottom:28px}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-.5px;color:var(--text);margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text3);font-weight:400}
+.page-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+/* ── CARDS ─────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius2);padding:20px 22px;margin-bottom:14px}
+.card-title{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:16px;display:flex;align-items:center;gap:6px}
+
+/* ── STATS GRID ─────────────────────────────────── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius2);padding:16px 18px}
+.stat-value{font-size:28px;font-weight:700;color:var(--accent2);letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.stat-label{font-size:11px;color:var(--text3);margin-top:3px;font-weight:500}
+.stat-card.green .stat-value{color:var(--green)}
+.stat-card.yellow .stat-value{color:var(--yellow)}
+.stat-card.blue .stat-value{color:var(--blue)}
+
+/* ── BUTTONS ─────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 18px;border-radius:var(--radius);font-size:13px;font-weight:600;transition:all .15s;cursor:pointer;white-space:nowrap}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.btn-primary{background:var(--accent);color:#fff;border:none}
+.btn-primary:hover{background:#4f52d8;box-shadow:0 0 0 3px var(--accent-glow)}
+.btn-primary:active{transform:scale(.98)}
+.btn-secondary{background:var(--surface3);color:var(--text2);border:1px solid var(--border2)}
+.btn-secondary:hover{color:var(--text);border-color:var(--border2);background:var(--surface2)}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.btn-danger:hover{background:rgba(239,68,68,.18)}
+.btn-success{background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,.2)}
+.btn-success:hover{background:rgba(16,185,129,.18)}
+.btn-sm{padding:6px 13px;font-size:12px}
+.btn-xs{padding:4px 10px;font-size:11px}
+.btn-full{width:100%}
+.btn-icon{padding:7px;border-radius:8px}
+
+/* ── FORMS ─────────────────────────────────────── */
+.fg{margin-bottom:14px}
+.label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px}
+.label span{color:var(--text3);font-weight:400;margin-left:4px}
+input[type=text],input[type=url],input[type=datetime-local],input[type=password],textarea,select{
+  width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);
+  color:var(--text);padding:10px 13px;font-size:13px;transition:border .15s;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+input::placeholder,textarea::placeholder{color:var(--text3)}
+textarea{resize:vertical;min-height:88px;line-height:1.6}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2360607a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.char-count{font-size:11px;color:var(--text3);text-align:right;margin-top:4px}
+
+/* ── TABS ─────────────────────────────────────── */
+.tabs{display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:3px;width:fit-content;margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:7px 16px;border-radius:7px;border:none;background:transparent;color:var(--text3);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tab.active{background:var(--surface3);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+
+/* ── BADGES ─────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px}
+.badge-green{background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,.2)}
+.badge-red{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.badge-blue{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,.2)}
+.badge-yellow{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(245,158,11,.2)}
+.badge-purple{background:var(--accent-dim);color:var(--accent2);border:1px solid rgba(99,102,241,.2)}
+.badge-dot::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block}
+
+/* ── TOGGLE ─────────────────────────────────────── */
+.toggle-wrap{position:relative;width:38px;height:21px;flex-shrink:0}
+.toggle-wrap input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:var(--border2);border-radius:21px;cursor:pointer;transition:.2s}
+.toggle-track::before{content:'';position:absolute;width:15px;height:15px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle-wrap input:checked+.toggle-track{background:var(--accent)}
+.toggle-wrap input:checked+.toggle-track::before{transform:translateX(17px)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-row-info .title{font-size:13px;font-weight:500;color:var(--text)}
+.toggle-row-info .sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* ── PROGRESS ─────────────────────────────────────── */
+.progress-bar{width:100%;height:4px;background:var(--border);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .3s ease}
+.progress-fill.green{background:var(--green)}
+
+/* ── ACCOUNT ITEM ─────────────────────────────────── */
+.acc-item{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 16px;background:var(--bg);
+  border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:8px;
+  transition:border-color .15s;
+}
+.acc-item:hover{border-color:var(--border2)}
+.avatar{
+  width:38px;height:38px;border-radius:10px;
+  background:var(--accent-dim);border:1px solid rgba(99,102,241,.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:var(--accent2);flex-shrink:0;font-family:var(--mono)
+}
+.acc-info{flex:1;min-width:0}
+.acc-name{font-size:13px;font-weight:600;color:var(--text)}
+.acc-meta{font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
+.acc-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* ── CHECKLIST ─────────────────────────────────────── */
+.checklist{display:flex;flex-direction:column;gap:5px;max-height:260px;overflow-y:auto}
+.check-item{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;
+  background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);
+  cursor:pointer;transition:border-color .15s;
+}
+.check-item:hover{border-color:var(--border2)}
+.check-item.checked{border-color:var(--accent);background:var(--accent-dim)}
+.check-item input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;flex-shrink:0;cursor:pointer}
+.check-item .ci-name{font-size:12px;font-weight:500}
+.check-item .ci-user{font-size:10px;color:var(--text3);font-family:var(--mono)}
+
+/* ── QUEUE ITEM ─────────────────────────────────────── */
+.queue-item{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:13px 16px;background:var(--bg);
+  border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:8px;
+}
+.queue-icon{
+  width:40px;height:40px;border-radius:9px;
+  background:var(--surface3);display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0
+}
+.queue-info{flex:1;min-width:0}
+.queue-cap{font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+.queue-meta{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.queue-err{font-size:11px;color:var(--red);margin-top:4px;background:var(--red-dim);padding:4px 8px;border-radius:6px}
+
+/* ── MONITOR CARD ─────────────────────────────────── */
+.mon-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius2);padding:18px 20px;margin-bottom:12px}
+.mon-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.mon-stat{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center}
+.mon-stat .v{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.mon-stat .l{font-size:10px;color:var(--text3);margin-top:2px;font-weight:500}
+
+/* ── LOG ─────────────────────────────────────── */
+.log-box{
+  font-size:11px;font-family:var(--mono);
+  color:var(--text2);max-height:240px;overflow-y:auto;
+  line-height:2;background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 14px;
+}
+.log-entry.success{color:var(--green)}
+.log-entry.error{color:var(--red)}
+.log-entry.warn{color:var(--yellow)}
+
+/* ── LOOP BANNER ─────────────────────────────────── */
+.loop-banner{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 18px;border-radius:var(--radius2);
+  background:var(--surface);border:1px solid var(--border);margin-bottom:16px;
+}
+.loop-dot{width:9px;height:9px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:all .3s}
+.loop-dot.active{background:var(--green);box-shadow:0 0 10px var(--green)}
+.loop-dot.active-b{background:#86efac;box-shadow:0 0 10px #86efac}
+
+/* ── MODAL ─────────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:16px;padding:28px;width:100%;max-width:480px;
+  max-height:90vh;overflow-y:auto;position:relative;
+}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.modal-title{font-size:16px;font-weight:700;letter-spacing:-.3px}
+.modal-close{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .15s}
+.modal-close:hover{background:var(--surface3);color:var(--text)}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+
+/* ── CONNECT FLOW ─────────────────────────────────── */
+.connect-steps{display:flex;gap:0;margin-bottom:20px;position:relative}
+.connect-steps::before{content:'';position:absolute;top:15px;left:15px;right:15px;height:1px;background:var(--border2);z-index:0}
+.step-item{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;position:relative;z-index:1}
+.step-num{width:30px;height:30px;border-radius:50%;border:2px solid var(--border2);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text3);transition:all .2s}
+.step-num.done{border-color:var(--green);background:var(--green-dim);color:var(--green)}
+.step-num.active{border-color:var(--accent);background:var(--accent-dim);color:var(--accent2)}
+.step-label{font-size:10px;color:var(--text3);font-weight:500;text-align:center}
+
+.oauth-info{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px}
+.oauth-info p{font-size:12px;color:var(--text2);line-height:1.7}
+.oauth-info code{font-family:var(--mono);font-size:11px;color:var(--accent2);background:var(--accent-dim);padding:2px 6px;border-radius:4px}
+
+/* ── TOAST ─────────────────────────────────────── */
+#toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{
+  padding:11px 16px;border-radius:10px;font-size:13px;font-weight:500;
+  max-width:300px;pointer-events:none;
+  animation:toast-in .2s ease;display:flex;align-items:center;gap:8px;
+  box-shadow:0 4px 20px rgba(0,0,0,.4);
+}
+@keyframes toast-in{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.success{background:#0a1f14;border:1px solid #166534;color:#4ade80}
+.toast.error{background:#1a0808;border:1px solid #7f1d1d;color:#f87171}
+.toast.info{background:#0a1120;border:1px solid #1e3a5f;color:#60a5fa}
+.toast.warn{background:#1a1200;border:1px solid #713f12;color:#fbbf24}
+
+/* ── GUIDE BOX ─────────────────────────────────── */
+.guide-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius2);padding:16px 18px;margin-top:14px}
+.guide-title{font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
+.guide-list{list-style:none;counter-reset:guide}
+.guide-list li{counter-increment:guide;font-size:12px;color:var(--text3);line-height:1.6;padding:4px 0;display:flex;gap:8px}
+.guide-list li::before{content:counter(guide);width:18px;height:18px;border-radius:5px;background:var(--surface3);color:var(--text2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:2px}
+.guide-list strong{color:var(--text2)}
+
+/* ── DIVIDER ─────────────────────────────────────── */
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+
+/* ── MOBILE ─────────────────────────────────────── */
+@media(max-width:768px){
+  :root{--sidebar:260px}
+  #sidebar{position:fixed;left:0;top:0;height:100vh;transform:translateX(-100%);z-index:40}
+  #sidebar.open{transform:translateX(0);box-shadow:0 0 0 100vw rgba(0,0,0,.5)}
+  .sb-overlay.open{display:block}
+  #mobile-topbar{display:flex}
+  #content{padding:18px 16px}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .tabs{width:100%}
+  .tab{flex:1;text-align:center}
+  .acc-actions{flex-direction:column}
+  .modal{padding:20px}
+  .connect-steps{gap:0}
+  .step-label{display:none}
+  #app{flex-direction:column}
+}
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .mon-stats{grid-template-columns:repeat(3,1fr)}
+  .modal-footer{flex-direction:column}
+  .modal-footer .btn{width:100%}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+<!-- ── SIDEBAR ──────────────────────────────────────────────────── -->
+<div id="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-icon">
+      <svg viewBox="0 0 24 24"><rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/><rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>
+    </div>
+    <div class="sb-logo-text"><h1>InstaMatrix</h1><p>Multi-account</p></div>
+  </div>
+  <nav>
+    <div class="nav-section">Principal</div>
+    <div class="nav-item active" data-page="overview">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Visão Geral</span>
+    </div>
+    <div class="nav-item" data-page="create">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <span>Criar Post</span>
+    </div>
+    <div class="nav-item" data-page="queue">
+      <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      <span>Fila de Posts</span>
+      <span class="nav-badge" id="nb-queue" style="display:none">0</span>
+    </div>
+    <div class="nav-section">Automação</div>
+    <div class="nav-item" data-page="loop">
+      <svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      <span>Loop Automático</span>
+    </div>
+    <div class="nav-section">Gestão</div>
+    <div class="nav-item" data-page="accounts">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Contas</span>
+      <span class="nav-badge" id="nb-acc" style="display:none">0</span>
+    </div>
+    <div class="nav-item" data-page="monitor">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Monitor</span>
+    </div>
+    <div class="nav-item" data-page="settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Configurações</span>
+    </div>
+  </nav>
+  <div class="sb-footer">v4.0 · Meta Graph API</div>
+</div>
+<div class="sb-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+
+<!-- ── MAIN ──────────────────────────────────────────────────────── -->
+<div id="main">
+  <div id="mobile-topbar">
+    <div class="hamburger" onclick="openSidebar()">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </div>
+    <div class="topbar-title" id="mob-title">Visão Geral</div>
+    <div style="width:36px"></div>
+  </div>
+
+  <div id="content">
+
+  <!-- ── OVERVIEW ─────────────────────────────────────── -->
+  <div class="page active" id="page-overview">
+    <div class="page-header">
+      <div class="page-title">Visão Geral</div>
+      <div class="page-sub">Resumo da operação em tempo real</div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-value" id="s-acc">0</div><div class="stat-label">Contas ativas</div></div>
+      <div class="stat-card blue"><div class="stat-value" id="s-q">0</div><div class="stat-label">Na fila</div></div>
+      <div class="stat-card green"><div class="stat-value" id="s-today">0</div><div class="stat-label">Publicados hoje</div></div>
+      <div class="stat-card yellow"><div class="stat-value" id="s-total">0</div><div class="stat-label">Total publicado</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Contas conectadas
+      </div>
+      <div id="ov-accs"><p style="color:var(--text3);font-size:13px">Nenhuma conta conectada ainda.</p></div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:12px" onclick="nav('accounts')">Gerenciar contas →</button>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Últimas publicações
+      </div>
+      <div id="ov-queue"></div>
+      <p id="ov-empty" style="color:var(--text3);font-size:13px">Nenhum post ainda.</p>
+    </div>
+  </div>
+
+  <!-- ── CREATE ─────────────────────────────────────── -->
+  <div class="page" id="page-create">
+    <div class="page-header">
+      <div class="page-title">Criar Post</div>
+      <div class="page-sub">Feed, Story e Reels com polling automático</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tipo de publicação</div>
+      <div class="tabs">
+        <button class="tab active" data-t="FEED" onclick="setType(this,'FEED')">📷 Feed</button>
+        <button class="tab" data-t="STORIES" onclick="setType(this,'STORIES')">⚡ Story</button>
+        <button class="tab" data-t="REELS" onclick="setType(this,'REELS')">🎬 Reels</button>
+      </div>
+      <div class="fg">
+        <label class="label" id="ml">URL pública da imagem <span>(JPG/PNG, HTTPS)</span></label>
+        <input type="url" id="murl" placeholder="https://..." oninput="prevMedia()">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <span class="badge badge-purple">JPG / PNG</span>
+          <span class="badge badge-blue">URL HTTPS pública</span>
+        </div>
+      </div>
+      <div id="mprev" style="display:none;margin-bottom:14px;text-align:center">
+        <img id="mprev-img" src="" style="display:none;max-height:200px;border-radius:var(--radius);max-width:100%">
+        <video id="mprev-vid" src="" controls style="display:none;max-height:200px;border-radius:var(--radius);max-width:100%"></video>
+      </div>
+      <div class="fg" id="cap-wrap">
+        <label class="label">Legenda <span>máx. 2200 caracteres</span></label>
+        <textarea id="cap" maxlength="2200" oninput="document.getElementById('cap-count').textContent=this.value.length" placeholder="Escreva a legenda, #hashtags e emojis 😊"></textarea>
+        <div class="char-count"><span id="cap-count">0</span> / 2200</div>
+      </div>
+      <div id="story-ex" style="display:none"></div>
+      <div id="reels-ex" style="display:none">
+        <div class="fg"><label class="label">Capa (thumbnail) <span>URL opcional</span></label><input type="url" id="r-cover" placeholder="https://..."></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Agendamento</div>
+      <div class="tabs">
+        <button class="tab active" data-s="now" onclick="setSched(this,'now')">🚀 Publicar agora</button>
+        <button class="tab" data-s="later" onclick="setSched(this,'later')">🕐 Agendar</button>
+      </div>
+      <div id="sched-w" style="display:none"><div class="fg" style="margin-bottom:0"><label class="label">Data e hora</label><input type="datetime-local" id="sched-dt"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Publicar em <span id="sel-count" style="background:var(--accent-dim);color:var(--accent2);padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-left:4px">0</span></div>
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <button class="btn btn-secondary btn-xs" onclick="selAll()">Selecionar tudo</button>
+        <button class="btn btn-secondary btn-xs" onclick="selNone()">Limpar</button>
+      </div>
+      <div class="checklist" id="acc-cl"><p style="color:var(--text3);font-size:13px">Nenhuma conta. <a href="#" onclick="nav('accounts');return false" style="color:var(--accent2)">Adicionar →</a></p></div>
+    </div>
+    <button class="btn btn-primary btn-full" style="padding:14px;font-size:14px" onclick="submitPost()">
+      <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      <span id="pub-txt">Publicar / Agendar</span>
+    </button>
+    <div id="prog-w" style="display:none;margin-top:12px">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px" id="prog-lbl">Aguardando...</div>
+      <div class="progress-bar"><div class="progress-fill" id="prog-f" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- ── QUEUE ─────────────────────────────────────── -->
+  <div class="page" id="page-queue">
+    <div class="page-header">
+      <div class="page-title">Fila de Posts</div>
+      <div class="page-sub">Histórico completo de publicações</div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-f="all" onclick="fq(this,'all')">Todos</button>
+      <button class="tab" data-f="scheduled" onclick="fq(this,'scheduled')">Agendados</button>
+      <button class="tab" data-f="done" onclick="fq(this,'done')">Publicados</button>
+      <button class="tab" data-f="error" onclick="fq(this,'error')">Com erro</button>
+    </div>
+    <div id="q-list"></div>
+    <p id="q-empty" style="color:var(--text3);font-size:13px;display:none;padding:20px 0">Nenhum post nesta categoria.</p>
+  </div>
+
+  <!-- ── ACCOUNTS ─────────────────────────────────────── -->
+  <div class="page" id="page-accounts">
+    <div class="page-header">
+      <div class="page-title">Contas</div>
+      <div class="page-sub">Gerencie até 25 contas Instagram Business / Creator</div>
+      <div class="page-actions">
+        <button class="btn btn-primary btn-sm" onclick="openConnect()">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Conectar Instagram
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="openAddManual()">Adicionar manual</button>
+      </div>
+    </div>
+    <div id="acc-list"></div>
+    <p id="acc-empty" style="color:var(--text3);font-size:13px;display:none">Nenhuma conta conectada ainda.</p>
+    <div class="guide-box">
+      <div class="guide-title">Como conectar via API</div>
+      <ul class="guide-list">
+        <li><span>Acesse <strong>developers.facebook.com</strong> e crie um app tipo <strong>Business</strong></span></li>
+        <li><span>Ative o produto <strong>Instagram Graph API</strong> no painel</span></li>
+        <li><span>Em Configurações básicas, copie o <strong>App ID</strong> e o <strong>App Secret</strong></span></li>
+        <li><span>Clique em <strong>Conectar Instagram</strong> acima e preencha os dados</span></li>
+        <li><span>Autorize o app e obtenha o Access Token e Business ID</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── MONITOR ─────────────────────────────────────── -->
+  <div class="page" id="page-monitor">
+    <div class="page-header">
+      <div class="page-title">Monitor</div>
+      <div class="page-sub">Status em tempo real de todas as contas</div>
+      <div class="page-actions">
+        <button class="btn btn-primary btn-sm" id="mon-refresh-btn" onclick="monRefreshAll()">
+          <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Atualizar tudo
+        </button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label class="toggle-wrap"><input type="checkbox" id="mon-auto-toggle" onchange="monToggleAuto(this.checked)"><span class="toggle-track"></span></label>
+          <span style="font-size:12px;color:var(--text2)">Auto-refresh</span>
+          <select id="mon-interval" style="width:auto;padding:6px 10px;font-size:12px" onchange="monSetInterval()">
+            <option value="30">30s</option><option value="60" selected>1min</option><option value="120">2min</option><option value="300">5min</option>
+          </select>
+        </div>
+        <span id="mon-last-update" style="font-size:11px;color:var(--text3)"></span>
+      </div>
+    </div>
+    <div id="mon-empty" style="display:none;color:var(--text3);font-size:13px;padding:20px 0">
+      Nenhuma conta cadastrada. <a href="#" onclick="nav('accounts');return false" style="color:var(--accent2)">Adicionar →</a>
+    </div>
+    <div id="mon-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
+  </div>
+
+  <!-- ── LOOP ─────────────────────────────────────── -->
+  <div class="page" id="page-loop">
+    <div class="page-header">
+      <div class="page-title">Loop Automático</div>
+      <div class="page-sub">Dois loops independentes de publicação</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <button class="btn btn-primary" id="tab-a-btn" onclick="switchLoopTab('a')" style="flex:1">🚀 Loop A — Velocidade</button>
+      <button class="btn btn-secondary" id="tab-b-btn" onclick="switchLoopTab('b')" style="flex:1">🌱 Loop B — Aquecimento</button>
+    </div>
+
+    <!-- LOOP A -->
+    <div id="loop-tab-a">
+      <div class="loop-banner">
+        <div class="loop-dot" id="loop-dot"></div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600" id="loop-status-txt">Loop A inativo</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px" id="loop-next-txt">—</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:22px;font-weight:700;color:var(--accent2);font-variant-numeric:tabular-nums" id="loop-count-today">0</div>
+          <div style="font-size:10px;color:var(--text3)">publicados hoje</div>
+        </div>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:6px">
+          <span>Progresso do dia</span><span id="loop-prog-lbl">0 / 50</span>
+        </div>
+        <div class="progress-bar" style="height:6px"><div class="progress-fill" id="loop-prog-f" style="width:0%"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Configuração do Loop A</div>
+        <div class="fg"><label class="label">URLs dos vídeos <span>uma por linha</span></label>
+          <textarea id="loop-urls" rows="5" placeholder="https://cdn.exemplo.com/video1.mp4&#10;https://cdn.exemplo.com/video2.mp4" oninput="document.getElementById('loop-url-count').textContent=loopGetUrls().length"></textarea>
+          <div class="char-count"><span id="loop-url-count">0</span> URL(s) em ciclo</div>
+        </div>
+        <div class="fg"><label class="label">Legendas <span>sorteadas aleatoriamente, uma por linha</span></label>
+          <textarea id="loop-cap" rows="3" placeholder="Legenda 1 com #hashtags 😊&#10;Legenda 2 diferente 🔥" oninput="document.getElementById('loop-cap-count').textContent=this.value.split('\n').filter(l=>l.trim()).length"></textarea>
+          <div class="char-count"><span id="loop-cap-count">0</span> legenda(s)</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div class="fg" style="margin-bottom:0"><label class="label">Posts por hora</label>
+            <select id="loop-per-hour"><option value="1">1/hora</option><option value="2">2/hora</option><option value="3">3/hora</option><option value="4" selected>4/hora</option></select>
+          </div>
+          <div class="fg" style="margin-bottom:0"><label class="label">Limite diário</label>
+            <select id="loop-daily-limit"><option value="10">10/dia</option><option value="20">20/dia</option><option value="30">30/dia</option><option value="40">40/dia</option><option value="50" selected>50/dia</option></select>
+          </div>
+        </div>
+        <div class="fg"><label class="label">Intervalo entre posts</label>
+          <select id="loop-stagger-mode"><option value="fixed">Fixo (15s entre posts)</option><option value="stagger" selected>Escalonado (+10min → +12min → +15min...)</option><option value="random">Aleatório (8 a 18 minutos)</option></select>
+        </div>
+        <div class="fg"><label class="label">Tipo de publicação</label>
+          <select id="loop-type"><option value="REELS">🎬 Reels</option><option value="FEED">📷 Feed (vídeo)</option><option value="STORIES">⚡ Stories</option></select>
+        </div>
+        <div class="card-title" style="margin-top:4px">Contas do Loop A</div>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button class="btn btn-secondary btn-xs" onclick="loopSelAll()">Todas</button>
+          <button class="btn btn-secondary btn-xs" onclick="loopSelNone()">Nenhuma</button>
+        </div>
+        <div class="checklist" id="loop-acc-cl"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:20px">
+        <button class="btn btn-primary" style="flex:1;padding:13px" id="loop-start-btn" onclick="loopStart()">▶ Iniciar Loop A</button>
+        <button class="btn btn-danger" style="padding:13px 22px" id="loop-stop-btn" onclick="loopStop()" disabled>⏹ Parar</button>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="card-title" style="margin-bottom:0">Log — Loop A</div>
+          <button class="btn btn-secondary btn-xs" onclick="document.getElementById('loop-log').innerHTML='';document.getElementById('loop-log-empty').style.display='block'">Limpar</button>
+        </div>
+        <div class="log-box" id="loop-log"></div>
+        <p id="loop-log-empty" style="font-size:12px;color:var(--text3);padding:8px 0">O log aparecerá aqui quando o loop estiver ativo.</p>
+      </div>
+    </div>
+
+    <!-- LOOP B -->
+    <div id="loop-tab-b" style="display:none">
+      <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:var(--radius2);padding:14px 18px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px">🌱 Modo Aquecimento</div>
+        <div style="font-size:12px;color:var(--text3);line-height:1.8">
+          • Máximo <strong style="color:var(--text2)">1 post por hora</strong> por conta &nbsp;•&nbsp; Máximo <strong style="color:var(--text2)">10 posts por dia</strong> por conta<br>
+          • Todas as contas postam <strong style="color:var(--text2)">simultaneamente</strong> a cada ciclo de 1h
+        </div>
+      </div>
+      <div class="loop-banner">
+        <div class="loop-dot" id="loopb-dot"></div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600" id="loopb-status-txt">Loop B inativo</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px" id="loopb-next-txt">—</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:22px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums" id="loopb-count-today">0</div>
+          <div style="font-size:10px;color:var(--text3)">publicados hoje</div>
+        </div>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:6px">
+          <span>Progresso (aquecimento)</span><span id="loopb-prog-lbl">0 / 10</span>
+        </div>
+        <div class="progress-bar" style="height:6px"><div class="progress-fill green" id="loopb-prog-f" style="width:0%"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Configuração do Loop B</div>
+        <div class="fg"><label class="label">URLs dos vídeos <span>uma por linha</span></label>
+          <textarea id="loopb-urls" rows="5" placeholder="https://cdn.exemplo.com/video1.mp4" oninput="document.getElementById('loopb-url-count').textContent=loopbGetUrls().length"></textarea>
+          <div class="char-count"><span id="loopb-url-count">0</span> URL(s)</div>
+        </div>
+        <div class="fg"><label class="label">Legendas <span>opcionais, uma por linha</span></label>
+          <textarea id="loopb-cap" rows="3" placeholder="Legenda 1&#10;Legenda 2" oninput="document.getElementById('loopb-cap-count').textContent=this.value.split('\n').filter(l=>l.trim()).length"></textarea>
+          <div class="char-count"><span id="loopb-cap-count">0</span> legenda(s)</div>
+        </div>
+        <div class="fg"><label class="label">Tipo de publicação</label>
+          <select id="loopb-type"><option value="REELS">🎬 Reels</option><option value="FEED">📷 Feed (vídeo)</option><option value="STORIES">⚡ Stories</option></select>
+        </div>
+        <div class="card-title">Contas em aquecimento</div>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button class="btn btn-secondary btn-xs" onclick="loopbSelAll()">Todas</button>
+          <button class="btn btn-secondary btn-xs" onclick="loopbSelNone()">Nenhuma</button>
+        </div>
+        <div class="checklist" id="loopb-acc-cl"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:20px">
+        <button class="btn btn-success" style="flex:1;padding:13px" id="loopb-start-btn" onclick="loopbStart()">▶ Iniciar Loop B</button>
+        <button class="btn btn-danger" style="padding:13px 22px" id="loopb-stop-btn" onclick="loopbStop()" disabled>⏹ Parar</button>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="card-title" style="margin-bottom:0">Log — Loop B</div>
+          <button class="btn btn-secondary btn-xs" onclick="document.getElementById('loopb-log').innerHTML='';document.getElementById('loopb-log-empty').style.display='block'">Limpar</button>
+        </div>
+        <div class="log-box" id="loopb-log"></div>
+        <p id="loopb-log-empty" style="font-size:12px;color:var(--text3);padding:8px 0">O log aparecerá aqui quando o Loop B estiver ativo.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SETTINGS ─────────────────────────────────────── -->
+  <div class="page" id="page-settings">
+    <div class="page-header">
+      <div class="page-title">Configurações</div>
+      <div class="page-sub">Replicação automática e tokens</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Conta matriz</div>
+      <div class="fg" style="margin-bottom:6px"><label class="label">Selecionar conta matriz</label><select id="mz-sel"><option value="">— Nenhuma —</option></select></div>
+      <p style="font-size:12px;color:var(--text3)">Referência para replicação automática de posts.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Replicação automática</div>
+      <div class="toggle-row"><div class="toggle-row-info"><div class="title">Replicar posts da conta matriz</div><div class="sub">Posts da matriz espelhados automaticamente</div></div><label class="toggle-wrap"><input type="checkbox" id="t-rep"><span class="toggle-track"></span></label></div>
+      <div class="toggle-row"><div class="toggle-row-info"><div class="title">Replicar Stories</div><div class="sub">Stories da matriz para todas as contas</div></div><label class="toggle-wrap"><input type="checkbox" id="t-sto"><span class="toggle-track"></span></label></div>
+      <div class="toggle-row"><div class="toggle-row-info"><div class="title">Manter menção nos Stories</div><div class="sub">A mesma menção de perfil é replicada</div></div><label class="toggle-wrap"><input type="checkbox" id="t-stk"><span class="toggle-track"></span></label></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Status dos tokens</div>
+      <div id="tok-list"><p style="font-size:13px;color:var(--text3)">Nenhuma conta cadastrada.</p></div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:12px" onclick="chkAll()">🔄 Verificar todos</button>
+    </div>
+    <div class="card" style="border-color:rgba(239,68,68,.25)">
+      <div class="card-title" style="color:var(--red)">Zona de perigo</div>
+      <button class="btn btn-danger btn-sm" onclick="clearData()">🗑️ Apagar todos os dados</button>
+    </div>
+  </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ── MODAL: CONNECT INSTAGRAM ──────────────────────────────── -->
+<div class="modal-overlay" id="modal-connect">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Conectar Instagram</div>
+      <button class="modal-close" onclick="closeModal('modal-connect')">✕</button>
+    </div>
+    <div class="connect-steps">
+      <div class="step-item"><div class="step-num active" id="cstep-1">1</div><div class="step-label">App ID</div></div>
+      <div class="step-item"><div class="step-num" id="cstep-2">2</div><div class="step-label">OAuth</div></div>
+      <div class="step-item"><div class="step-num" id="cstep-3">3</div><div class="step-label">Token</div></div>
+    </div>
+
+    <!-- Passo 1 -->
+    <div id="connect-p1">
+      <div class="oauth-info">
+        <p>Você precisará do <code>App ID</code> e <code>App Secret</code> do seu app no <strong>developers.facebook.com</strong>. A URL de callback deve estar registrada nas configurações do app.</p>
+      </div>
+      <div class="fg"><label class="label">App ID <span>*</span></label><input type="text" id="c-appid" placeholder="1234567890123456"></div>
+      <div class="fg"><label class="label">App Secret <span>*</span></label><input type="password" id="c-secret" placeholder="••••••••••••••••••••••••••••••••"></div>
+      <div class="fg"><label class="label">URL de Callback / Redirect URI <span>*</span></label><input type="url" id="c-redirect" placeholder="https://seuapp.netlify.app/"></div>
+      <div class="fg"><label class="label">Nome de exibição <span>*</span></label><input type="text" id="c-name" placeholder="Ex: Loja Principal"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('modal-connect')">Cancelar</button>
+        <button class="btn btn-primary" onclick="connectStep1()">
+          <svg viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
+          Gerar link de autorização
+        </button>
+      </div>
+    </div>
+
+    <!-- Passo 2 -->
+    <div id="connect-p2" style="display:none">
+      <div class="oauth-info">
+        <p>Clique no botão abaixo para autorizar o app no Instagram. Após autorizar, você será redirecionado. Copie o <code>code</code> da URL e cole abaixo.</p>
+      </div>
+      <div class="fg">
+        <label class="label">Link de autorização gerado</label>
+        <div style="display:flex;gap:8px">
+          <input type="url" id="c-oauth-url" readonly style="font-size:11px;font-family:var(--mono);color:var(--accent2)">
+          <button class="btn btn-secondary btn-sm" onclick="copyOAuthUrl()">Copiar</button>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" style="margin-bottom:16px" onclick="openOAuthWindow()">
+        <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Abrir página de autorização
+      </button>
+      <div class="fg"><label class="label">Code recebido na URL de retorno <span>*</span></label><input type="text" id="c-code" placeholder="Cole o ?code=... aqui"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="connectGoP1()">← Voltar</button>
+        <button class="btn btn-primary" onclick="connectStep2()">Trocar por Token →</button>
+      </div>
+    </div>
+
+    <!-- Passo 3 -->
+    <div id="connect-p3" style="display:none">
+      <div class="oauth-info" style="background:var(--green-dim);border-color:rgba(16,185,129,.25)">
+        <p style="color:var(--green)">✅ Token obtido com sucesso! Informe o <code>Instagram Business Account ID</code> para concluir.</p>
+      </div>
+      <div class="fg"><label class="label">Access Token gerado</label><input type="text" id="c-token-disp" readonly style="font-family:var(--mono);font-size:11px;color:var(--accent2)"></div>
+      <div class="fg"><label class="label">Instagram Business Account ID <span>*</span></label><input type="text" id="c-igid" placeholder="17841xxxxxxxxx"></div>
+      <div class="fg"><label class="label">@username <span>opcional</span></label><input type="text" id="c-username" placeholder="seuperfil"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="connectGoP1()">Recomeçar</button>
+        <button class="btn btn-primary" onclick="connectFinish()">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Salvar conta
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: ADD MANUAL ──────────────────────────────── -->
+<div class="modal-overlay" id="modal-acc">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="m-title">Adicionar conta</div>
+      <button class="modal-close" onclick="closeModal('modal-acc')">✕</button>
+    </div>
+    <div class="fg"><label class="label">Nome de exibição <span>*</span></label><input type="text" id="m-name" placeholder="Ex: Loja Principal"></div>
+    <div class="fg"><label class="label">@username</label><input type="text" id="m-user" placeholder="seuperfil"></div>
+    <div class="fg"><label class="label">Access Token <span>*</span></label><input type="text" id="m-tok" placeholder="EAAxxxxxxx..."></div>
+    <div class="fg"><label class="label">Instagram Business Account ID <span>*</span></label><input type="text" id="m-igid" placeholder="17841xxxxxxxxx"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-acc')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAcc()">Salvar conta</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+// ── STATE ────────────────────────────────────────────────────────
+let S={accounts:[],queue:[],cfg:{matrizId:null,rep:false,sto:false,stk:false},editId:null,monData:{}};
+let cType='FEED',cSched='now';
+let connectTemp={appId:'',secret:'',redirect:'',name:'',token:''};
+
+function save(){try{localStorage.setItem('imx4',JSON.stringify(S));}catch(e){}}
+function load(){try{const d=localStorage.getItem('imx4');if(d)S=JSON.parse(d);}catch(e){}}
+
+load();init();
+setInterval(runScheduled,30000);
+
+function init(){
+  renderAll();
+  document.querySelectorAll('#sidebar .nav-item').forEach(a=>{
+    a.addEventListener('click',()=>{nav(a.dataset.page);closeSidebar();});
+  });
+  document.getElementById('t-rep').addEventListener('change',e=>{S.cfg.rep=e.target.checked;save();});
+  document.getElementById('t-sto').addEventListener('change',e=>{S.cfg.sto=e.target.checked;save();});
+  document.getElementById('t-stk').addEventListener('change',e=>{S.cfg.stk=e.target.checked;save();});
+  document.getElementById('mz-sel').addEventListener('change',e=>{S.cfg.matrizId=e.target.value||null;save();});
+}
+
+function renderAll(){renderStats();renderAccList();renderAccCL();renderQueue('all');renderOV();renderToks();renderMzSel();loadCfg();updateBadges();}
+
+// ── SIDEBAR MOBILE ───────────────────────────────────────────────
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sb-overlay').classList.add('open');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sb-overlay').classList.remove('open');}
+
+// ── NAV ──────────────────────────────────────────────────────────
+const PAGE_TITLES={'overview':'Visão Geral','create':'Criar Post','queue':'Fila de Posts','accounts':'Contas','monitor':'Monitor','loop':'Loop Automático','settings':'Configurações'};
+function nav(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelector(`[data-page="${p}"]`).classList.add('active');
+  document.getElementById('mob-title').textContent=PAGE_TITLES[p]||'InstaMatrix';
+  if(p==='create')renderAccCL();
+  if(p==='queue')renderQueue('all');
+  if(p==='loop'){renderLoopAccCL();loopUpdateUI();renderLoopbAccCL();loopbUpdateUI();}
+  if(p==='settings'){renderToks();renderMzSel();}
+  if(p==='monitor')renderMonGrid();
+}
+
+// ── STATS ────────────────────────────────────────────────────────
+function renderStats(){
+  const today=new Date().toDateString();
+  document.getElementById('s-acc').textContent=S.accounts.length;
+  document.getElementById('s-q').textContent=S.queue.filter(q=>q.status==='scheduled').length;
+  document.getElementById('s-today').textContent=S.queue.filter(q=>q.status==='done'&&new Date(q.createdAt).toDateString()===today).length;
+  document.getElementById('s-total').textContent=S.queue.filter(q=>q.status==='done').length;
+  updateBadges();
+}
+function updateBadges(){
+  const qa=document.getElementById('nb-queue');const q=S.queue.filter(q=>q.status==='scheduled').length;
+  qa.style.display=q>0?'':'none';qa.textContent=q;
+  const aa=document.getElementById('nb-acc');const a=S.accounts.length;
+  aa.style.display=a>0?'':'none';aa.textContent=a;
+}
+
+// ── TYPE / SCHED ──────────────────────────────────────────────────
+function setType(btn,t){
+  document.querySelectorAll('.tab[data-t]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');cType=t;
+  const isV=t==='REELS',isS=t==='STORIES';
+  document.getElementById('ml').innerHTML=isV?'URL pública do vídeo <span>(MP4, HTTPS)</span>':isS?'URL pública da imagem ou vídeo <span>(HTTPS)</span>':'URL pública da imagem <span>(JPG/PNG, HTTPS)</span>';
+  document.getElementById('story-ex').style.display=isS?'block':'none';
+  document.getElementById('reels-ex').style.display=isV?'block':'none';
+  document.getElementById('cap-wrap').style.display=isS?'none':'block';
+  prevMedia();
+}
+function setSched(btn,s){
+  document.querySelectorAll('.tab[data-s]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');cSched=s;
+  document.getElementById('sched-w').style.display=s==='later'?'block':'none';
+  if(s==='later'){const n=new Date();n.setMinutes(n.getMinutes()+15);document.getElementById('sched-dt').value=n.toISOString().slice(0,16);}
+}
+function prevMedia(){
+  const url=document.getElementById('murl').value.trim();
+  const img=document.getElementById('mprev-img'),vid=document.getElementById('mprev-vid'),w=document.getElementById('mprev');
+  if(!url){w.style.display='none';img.style.display='none';vid.style.display='none';return;}
+  const isV=/\.(mp4|mov|webm)/i.test(url)||cType==='REELS';
+  w.style.display='block';
+  if(isV){img.style.display='none';vid.style.display='block';vid.src=url;}
+  else{vid.style.display='none';img.style.display='block';img.src=url;}
+}
+
+// ── CHECKLIST ────────────────────────────────────────────────────
+function renderAccCL(){
+  const el=document.getElementById('acc-cl');
+  if(!S.accounts.length){el.innerHTML='<p style="color:var(--text3);font-size:13px">Nenhuma conta. <a href="#" onclick="nav(\'accounts\');return false" style="color:var(--accent2)">Adicionar →</a></p>';updSelCount();return;}
+  el.innerHTML=S.accounts.map(a=>`
+    <label class="check-item" id="ci-${a.id}">
+      <input type="checkbox" id="chk-${a.id}" onchange="updSelCount();this.closest('.check-item').classList.toggle('checked',this.checked)">
+      <div class="avatar" style="width:28px;height:28px;font-size:10px">${ini(a.name)}</div>
+      <div><div class="ci-name">${esc(a.name)}</div><div class="ci-user">@${esc(a.username||'—')}</div></div>
+    </label>`).join('');
+  updSelCount();
+}
+function updSelCount(){document.getElementById('sel-count').textContent=getSelected().length;}
+function selAll(){document.querySelectorAll('#acc-cl input[type=checkbox]').forEach(cb=>{cb.checked=true;cb.closest('.check-item').classList.add('checked');});updSelCount();}
+function selNone(){document.querySelectorAll('#acc-cl input[type=checkbox]').forEach(cb=>{cb.checked=false;cb.closest('.check-item').classList.remove('checked');});updSelCount();}
+function getSelected(){return S.accounts.filter(a=>document.getElementById('chk-'+a.id)?.checked);}
+
+// ── SUBMIT ───────────────────────────────────────────────────────
+async function submitPost(){
+  const url=document.getElementById('murl').value.trim();
+  const cap=document.getElementById('cap').value.trim();
+  const sel=getSelected();
+  if(!url){toast('Cole a URL pública da mídia.','error');return;}
+  if(!sel.length){toast('Selecione ao menos uma conta.','error');return;}
+  const rCover=document.getElementById('r-cover').value.trim();
+  let schedAt=null;
+  if(cSched==='later'){
+    const v=document.getElementById('sched-dt').value;
+    if(!v){toast('Defina data/hora para agendamento.','error');return;}
+    schedAt=new Date(v).getTime();
+    if(schedAt<=Date.now()){toast('Agende para um horário futuro.','error');return;}
+  }
+  const entries=sel.map(acc=>({id:uid(),accId:acc.id,accName:acc.name,accUser:acc.username,type:cType,url,cap,rCover,schedAt,status:schedAt?'scheduled':'pending',createdAt:Date.now(),err:null}));
+  S.queue.push(...entries);save();renderQueue('all');renderStats();
+  if(!schedAt)await publishAll(entries);
+  else{toast(`Agendado em ${sel.length} conta(s)!`,'success');nav('queue');}
+}
+
+// ── PUBLISH ENGINE ───────────────────────────────────────────────
+async function publishAll(entries){
+  document.getElementById('pub-txt').textContent='Publicando...';
+  document.getElementById('prog-w').style.display='block';
+  let done=0;
+  for(const e of entries){
+    document.getElementById('prog-lbl').textContent=`Publicando em @${e.accUser}... (${done+1}/${entries.length})`;
+    document.getElementById('prog-f').style.width=`${Math.round((done/entries.length)*100)}%`;
+    updStatus(e.id,'publishing');
+    try{await pubOne(e);updStatus(e.id,'done');toast(`✅ Publicado: @${e.accUser}`,'success');}
+    catch(err){updStatus(e.id,'error',err.message);toast(`❌ @${e.accUser}: ${err.message}`,'error');}
+    done++;
+  }
+  document.getElementById('prog-f').style.width='100%';
+  document.getElementById('prog-lbl').textContent=`Concluído (${done} contas)`;
+  setTimeout(()=>{document.getElementById('prog-w').style.display='none';document.getElementById('prog-f').style.width='0%';},3500);
+  document.getElementById('pub-txt').textContent='Publicar / Agendar';
+  renderStats();renderQueue('all');nav('queue');
+}
+
+async function pubOne(entry){
+  const acc=S.accounts.find(a=>a.id===entry.accId);
+  if(!acc)throw new Error('Conta não encontrada');
+  const url=entry.url,type=entry.type,cap=entry.cap||'';
+  const isVid=/\.(mp4|mov|webm)/i.test(url)||type==='REELS';
+  let cRes;
+  if(type==='STORIES'){
+    const p={access_token:acc.token,media_type:'STORIES'};
+    if(isVid){p.video_url=url;}else{p.image_url=url;}
+    cRes=await igReq(`/${acc.igId}/media`,p);
+    if(!cRes.id)throw new Error(cRes.error?.message||'Falha ao criar container de Story');
+    if(isVid)await pollMedia(cRes.id,acc.token);
+  }else if(type==='REELS'){
+    const p={access_token:acc.token,media_type:'REELS',video_url:url,share_to_feed:true};
+    if(cap)p.caption=cap;if(entry.rCover)p.cover_url=entry.rCover;
+    cRes=await igReq(`/${acc.igId}/media`,p);
+    if(!cRes.id)throw new Error(cRes.error?.message||'Falha ao criar container de Reel');
+    await pollMedia(cRes.id,acc.token);
+  }else{
+    const p={access_token:acc.token};
+    if(isVid){p.media_type='VIDEO';p.video_url=url;}else{p.media_type='IMAGE';p.image_url=url;}
+    if(cap)p.caption=cap;
+    cRes=await igReq(`/${acc.igId}/media`,p);
+    if(!cRes.id)throw new Error(cRes.error?.message||'Falha ao criar container de Feed');
+    if(isVid)await pollMedia(cRes.id,acc.token);
+  }
+  const pub=await igReq(`/${acc.igId}/media_publish`,{creation_id:cRes.id,access_token:acc.token});
+  if(!pub.id)throw new Error(pub.error?.message||'Falha ao publicar');
+  return pub.id;
+}
+
+// ── BACKEND PROXY ────────────────────────────────────────────────
+// Detecta automaticamente a URL base (funciona local e na Netlify)
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8888/api'
+  : '/api';
+
+async function igReq(path, body) {
+  const r = await fetch(`${API_BASE}/ig-proxy`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, method: 'POST', body })
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
+    throw new Error(err.error || `Erro HTTP ${r.status}`);
+  }
+  return r.json();
+}
+
+async function pollMedia(creationId, token, max=24, interval=5000) {
+  for (let i = 0; i < max; i++) {
+    const r = await fetch(`${API_BASE}/ig-proxy`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        path: `/${creationId}`,
+        method: 'GET',
+        body: { fields: 'status_code,status', access_token: token }
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error.message || d.error);
+    if (d.status_code === 'FINISHED') return;
+    if (d.status_code === 'ERROR') throw new Error(`Processamento falhou: ${d.status || 'desconhecido'}`);
+    await new Promise(res => setTimeout(res, interval));
+  }
+  throw new Error('Timeout: vídeo não processou em 120s.');
+}
+
+async function runScheduled(){
+  const now=Date.now();
+  const due=S.queue.filter(e=>e.status==='scheduled'&&e.schedAt<=now);
+  for(const e of due){
+    updStatus(e.id,'publishing');
+    try{await pubOne(e);updStatus(e.id,'done');toast(`✅ Agendado publicado: @${e.accUser}`,'success');}
+    catch(err){updStatus(e.id,'error',err.message);}
+  }
+  if(due.length)renderStats();
+}
+function updStatus(id,status,err=null){
+  const e=S.queue.find(q=>q.id===id);if(e){e.status=status;if(err)e.err=err;}
+  save();renderQueue('all');
+}
+
+// ── QUEUE ────────────────────────────────────────────────────────
+function fq(btn,f){document.querySelectorAll('#page-queue .tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderQueue(f);}
+function renderQueue(f){
+  const el=document.getElementById('q-list'),em=document.getElementById('q-empty');
+  let items=[...S.queue].reverse();
+  if(f!=='all'){const m={scheduled:['scheduled'],done:['done'],error:['error']};items=items.filter(i=>(m[f]||[]).includes(i.status));}
+  if(!items.length){el.innerHTML='';em.style.display='block';return;}
+  em.style.display='none';
+  el.innerHTML=items.map(it=>`
+    <div class="queue-item">
+      <div class="queue-icon">${tIcon(it.type)}</div>
+      <div class="queue-info">
+        <div class="queue-cap">${esc(it.cap||it.url)}</div>
+        <div class="queue-meta">@${esc(it.accUser)} · ${it.type} · ${fmtD(it.schedAt||it.createdAt)}</div>
+        ${it.err?`<div class="queue-err">⚠ ${esc(it.err)}</div>`:''}
+      </div>
+      <span class="badge ${sSty(it.status)}">${sLbl(it.status)}</span>
+    </div>`).join('');
+}
+
+// ── CONNECT FLOW ─────────────────────────────────────────────────
+function openConnect(){
+  connectTemp={appId:'',secret:'',redirect:'',name:'',token:''};
+  connectGoP1();
+  document.getElementById('modal-connect').classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function connectGoP1(){
+  document.getElementById('connect-p1').style.display='block';
+  document.getElementById('connect-p2').style.display='none';
+  document.getElementById('connect-p3').style.display='none';
+  setConnectStep(1);
+}
+function setConnectStep(n){
+  for(let i=1;i<=3;i++){
+    const el=document.getElementById('cstep-'+i);
+    el.className='step-num'+(i<n?' done':i===n?' active':'');
+  }
+}
+function connectStep1(){
+  const appId=document.getElementById('c-appid').value.trim();
+  const secret=document.getElementById('c-secret').value.trim();
+  const redirect=document.getElementById('c-redirect').value.trim();
+  const name=document.getElementById('c-name').value.trim();
+  if(!appId||!secret||!redirect||!name){toast('Preencha todos os campos.','error');return;}
+  connectTemp={appId,secret,redirect,name,token:''};
+  const scope='instagram_basic,instagram_content_publish,instagram_manage_insights,pages_show_list,pages_read_engagement,business_management';
+  const oauthUrl=`https://www.facebook.com/v19.0/dialog/oauth?client_id=${encodeURIComponent(appId)}&redirect_uri=${encodeURIComponent(redirect)}&scope=${encodeURIComponent(scope)}&response_type=code`;
+  document.getElementById('c-oauth-url').value=oauthUrl;
+  document.getElementById('connect-p1').style.display='none';
+  document.getElementById('connect-p2').style.display='block';
+  setConnectStep(2);
+}
+function copyOAuthUrl(){
+  navigator.clipboard.writeText(document.getElementById('c-oauth-url').value).then(()=>toast('Link copiado!','success'));
+}
+function openOAuthWindow(){
+  const url=document.getElementById('c-oauth-url').value;
+  if(url)window.open(url,'_blank','width=600,height=700');
+}
+async function connectStep2(){
+  let code=document.getElementById('c-code').value.trim();
+  // Se o usuário colou a URL inteira, extrai o code
+  if(code.includes('?')){try{const u=new URL(code);code=u.searchParams.get('code')||code;}catch(e){}}
+  if(!code){toast('Cole o code recebido.','error');return;}
+  toast('Trocando code por token (via backend seguro)...','info');
+  try{
+    // Chama o backend Netlify — o App Secret nunca sai do servidor
+    const r=await fetch(`${API_BASE}/oauth-token`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code,redirect_uri:connectTemp.redirect,app_id:connectTemp.appId})
+    });
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    if(!d.access_token)throw new Error('Token não recebido');
+    connectTemp.token=d.access_token;
+    document.getElementById('c-token-disp').value=d.access_token;
+    document.getElementById('connect-p2').style.display='none';
+    document.getElementById('connect-p3').style.display='block';
+    setConnectStep(3);
+    const longMsg=d.long_lived?' (long-lived, 60 dias)':'';
+    toast('Token obtido'+longMsg+'! Informe o Business ID.','success');
+  }catch(e){toast('Erro ao trocar code: '+e.message,'error');}
+}
+function connectFinish(){
+  const igId=document.getElementById('c-igid').value.trim();
+  const username=document.getElementById('c-username').value.trim().replace('@','');
+  if(!igId){toast('Informe o Business Account ID.','error');return;}
+  if(S.accounts.length>=25){toast('Limite de 25 contas.','error');return;}
+  S.accounts.push({id:uid(),name:connectTemp.name,username,token:connectTemp.token,igId});
+  save();renderAll();closeModal('modal-connect');
+  toast(`Conta "${connectTemp.name}" conectada!`,'success');
+}
+
+// ── ADD MANUAL ───────────────────────────────────────────────────
+function openAddManual(){
+  if(S.accounts.length>=25){toast('Limite de 25 contas.','error');return;}
+  S.editId=null;document.getElementById('m-title').textContent='Adicionar conta';
+  ['m-name','m-user','m-tok','m-igid'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('modal-acc').classList.add('open');
+}
+function editAcc(id){
+  const a=S.accounts.find(x=>x.id===id);if(!a)return;
+  S.editId=id;document.getElementById('m-title').textContent='Editar conta';
+  document.getElementById('m-name').value=a.name;document.getElementById('m-user').value=a.username||'';
+  document.getElementById('m-tok').value=a.token;document.getElementById('m-igid').value=a.igId;
+  document.getElementById('modal-acc').classList.add('open');
+}
+function saveAcc(){
+  const name=document.getElementById('m-name').value.trim();
+  const user=document.getElementById('m-user').value.trim().replace('@','');
+  const tok=document.getElementById('m-tok').value.trim();
+  const igId=document.getElementById('m-igid').value.trim();
+  if(!name||!tok||!igId){toast('Preencha nome, token e ID.','error');return;}
+  if(S.editId){const a=S.accounts.find(x=>x.id===S.editId);if(a){a.name=name;a.username=user;a.token=tok;a.igId=igId;}toast('Conta atualizada!','success');}
+  else{S.accounts.push({id:uid(),name,username:user,token:tok,igId});toast('Conta adicionada!','success');}
+  save();renderAll();closeModal('modal-acc');
+}
+function delAcc(id){if(!confirm('Remover esta conta?'))return;S.accounts=S.accounts.filter(a=>a.id!==id);save();renderAll();toast('Conta removida.','info');}
+
+// ── ACC LIST ─────────────────────────────────────────────────────
+function renderAccList(){
+  const el=document.getElementById('acc-list'),em=document.getElementById('acc-empty');
+  if(!S.accounts.length){el.innerHTML='';em.style.display='block';return;}
+  em.style.display='none';
+  el.innerHTML=S.accounts.map(a=>`
+    <div class="acc-item">
+      <div class="avatar">${ini(a.name)}</div>
+      <div class="acc-info">
+        <div class="acc-name">${esc(a.name)}</div>
+        <div class="acc-meta">@${esc(a.username||'—')} · ID: ${esc(a.igId)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px" id="ts-${a.id}">Token: não verificado</div>
+      </div>
+      <div class="acc-actions">
+        <button class="btn btn-secondary btn-xs" onclick="chkTok('${a.id}')">Verificar</button>
+        <button class="btn btn-secondary btn-xs" onclick="editAcc('${a.id}')">Editar</button>
+        <button class="btn btn-danger btn-xs" onclick="delAcc('${a.id}')">Remover</button>
+      </div>
+    </div>`).join('');
+}
+
+async function _verifyToken(a){
+  const r=await fetch(`${API_BASE}/check-token`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({access_token:a.token,ig_id:a.igId})
+  });
+  return r.json();
+}
+async function chkTok(id){
+  const a=S.accounts.find(x=>x.id===id),el=document.getElementById('ts-'+id);
+  if(!a)return;if(el)el.textContent='Verificando...';
+  try{
+    const d=await _verifyToken(a);
+    if(d.valid){const u=d.account?.username||a.username;if(el)el.innerHTML=`<span style="color:var(--green)">✅ Token válido (@${u})</span>`;}
+    else throw new Error(d.error||'inválido');
+  }catch(e){if(el)el.innerHTML=`<span style="color:var(--red)">❌ ${esc(e.message)}</span>`;}
+}
+async function chkAll(){for(const a of S.accounts)await chkTok(a.id);}
+
+function renderToks(){
+  const el=document.getElementById('tok-list');
+  if(!S.accounts.length){el.innerHTML='<p style="font-size:13px;color:var(--text3)">Nenhuma conta.</p>';return;}
+  el.innerHTML=S.accounts.map(a=>`
+    <div class="toggle-row" style="padding:10px 0">
+      <div style="display:flex;align-items:center;gap:10px;flex:1">
+        <div class="avatar" style="width:28px;height:28px;font-size:10px">${ini(a.name)}</div>
+        <div><div style="font-size:13px;font-weight:500">${esc(a.name)}</div><div id="ts2-${a.id}" style="font-size:11px;color:var(--text3)">não verificado</div></div>
+      </div>
+      <button class="btn btn-secondary btn-xs" onclick="chkTok2('${a.id}')">Verificar</button>
+    </div>`).join('');
+}
+async function chkTok2(id){
+  const a=S.accounts.find(x=>x.id===id),el=document.getElementById('ts2-'+id);
+  if(!a)return;if(el)el.textContent='Verificando...';
+  try{
+    const d=await _verifyToken(a);
+    if(d.valid){if(el)el.innerHTML=`<span style="color:var(--green)">✅ válido</span>`;}
+    else throw new Error(d.error||'inválido');
+  }catch(e){if(el)el.innerHTML=`<span style="color:var(--red)">❌ ${esc(e.message)}</span>`;}
+}
+
+function renderMzSel(){
+  const s=document.getElementById('mz-sel');
+  s.innerHTML='<option value="">— Nenhuma —</option>'+S.accounts.map(a=>`<option value="${a.id}"${S.cfg.matrizId===a.id?' selected':''}>${esc(a.name)}</option>`).join('');
+}
+function loadCfg(){
+  document.getElementById('t-rep').checked=!!S.cfg.rep;
+  document.getElementById('t-sto').checked=!!S.cfg.sto;
+  document.getElementById('t-stk').checked=!!S.cfg.stk;
+}
+function clearData(){if(!confirm('Apagar TODOS os dados? Isso não pode ser desfeito.'))return;localStorage.removeItem('imx4');location.reload();}
+
+function renderOV(){
+  const el=document.getElementById('ov-accs');
+  if(!S.accounts.length){el.innerHTML='<p style="color:var(--text3);font-size:13px">Nenhuma conta ainda.</p>';return;}
+  el.innerHTML=S.accounts.map(a=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div class="avatar" style="width:28px;height:28px;font-size:10px">${ini(a.name)}</div>
+      <div><div style="font-size:13px;font-weight:500">${esc(a.name)}</div><div style="font-size:11px;color:var(--text3);font-family:var(--mono)">@${esc(a.username||'—')}</div></div>
+    </div>`).join('');
+  const ovq=document.getElementById('ov-queue'),ove=document.getElementById('ov-empty');
+  const rec=[...S.queue].reverse().slice(0,5);
+  if(!rec.length){ovq.innerHTML='';ove.style.display='block';return;}
+  ove.style.display='none';
+  ovq.innerHTML=rec.map(it=>`
+    <div class="queue-item" style="padding:10px 12px">
+      <div class="queue-icon" style="width:32px;height:32px;font-size:14px">${tIcon(it.type)}</div>
+      <div class="queue-info">
+        <div class="queue-cap" style="font-size:12px">${esc(it.cap||it.url)}</div>
+        <div class="queue-meta">@${esc(it.accUser)} · ${fmtD(it.schedAt||it.createdAt)}</div>
+      </div>
+      <span class="badge ${sSty(it.status)}">${sLbl(it.status)}</span>
+    </div>`).join('');
+}
+
+// ── MONITOR ──────────────────────────────────────────────────────
+let monAutoTimer=null;
+function renderMonGrid(){
+  const grid=document.getElementById('mon-grid'),empty=document.getElementById('mon-empty');
+  if(!S.accounts.length){grid.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  grid.innerHTML=S.accounts.map(a=>{const cached=(S.monData&&S.monData[a.id])||null;return monCardHTML(a,cached);}).join('');
+}
+function monCardHTML(a,data){
+  const isLoading=!data,isError=data&&data.error;
+  const followers=data&&!isError?Number(data.followers_count||0).toLocaleString('pt-BR'):'—';
+  const mediaCount=data&&!isError?Number(data.media_count||0).toLocaleString('pt-BR'):'—';
+  const lastPost=data&&!isError&&data.lastPostTime?fmtD(data.lastPostTime):'—';
+  const statusOk=data&&!isError;
+  const today=new Date().toDateString();
+  const postsToday=S.queue.filter(q=>q.status==='done'&&q.accId===a.id&&new Date(q.createdAt).toDateString()===today).length;
+  return `
+  <div class="mon-card" id="moncard-${a.id}" style="border-color:${isError?'rgba(239,68,68,.3)':'var(--border)'}">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <div class="avatar" style="width:42px;height:42px;font-size:14px">${ini(a.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(a.name)}</div>
+        <div style="font-size:11px;color:var(--text3);font-family:var(--mono)">@${esc(a.username||'—')}</div>
+      </div>
+      <span class="badge ${statusOk?'badge-green':isError?'badge-red':'badge-purple'} badge-dot">
+        ${isLoading?'carregando':isError?'erro':'ativa'}
+      </span>
+    </div>
+    <div class="mon-stats">
+      <div class="mon-stat"><div class="v" style="color:var(--accent2)" id="mon-followers-${a.id}">${isLoading?'···':followers}</div><div class="l">seguidores</div></div>
+      <div class="mon-stat"><div class="v" style="color:var(--blue)" id="mon-posts-${a.id}">${isLoading?'···':mediaCount}</div><div class="l">posts</div></div>
+      <div class="mon-stat"><div class="v" style="color:var(--yellow)">${postsToday}</div><div class="l">hoje</div></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text3)">
+      <span>Último post: <span id="mon-lastpost-${a.id}" style="color:var(--text2)">${isLoading?'···':lastPost}</span></span>
+      <button class="btn btn-secondary btn-xs" onclick="monRefreshOne('${a.id}')">↻</button>
+    </div>
+    ${isError?`<div style="margin-top:10px;font-size:11px;color:var(--red);background:var(--red-dim);padding:8px 10px;border-radius:6px">⚠ ${esc(data.error)}</div>`:''}
+  </div>`;
+}
+async function monFetchOne(a){
+  try{
+    const r=await fetch(`${API_BASE}/ig-proxy`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({path:`/${a.igId}`,method:'GET',body:{fields:'followers_count,media_count,username',access_token:a.token}})
+    });
+    const d=await r.json();if(d.error)throw new Error(d.error.message||d.error);
+    let lastPostTime=null;
+    try{
+      const mr=await fetch(`${API_BASE}/ig-proxy`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({path:`/${a.igId}/media`,method:'GET',body:{fields:'timestamp',limit:'1',access_token:a.token}})
+      });
+      const md=await mr.json();if(md.data&&md.data.length>0)lastPostTime=new Date(md.data[0].timestamp).getTime();
+    }catch(e){}
+    return{followers_count:d.followers_count,media_count:d.media_count,username:d.username,lastPostTime};
+  }catch(e){return{error:e.message};}
+}
+async function monRefreshOne(id){
+  const a=S.accounts.find(x=>x.id===id);if(!a)return;
+  const fEl=document.getElementById('mon-followers-'+id),pEl=document.getElementById('mon-posts-'+id),lEl=document.getElementById('mon-lastpost-'+id);
+  if(fEl)fEl.textContent='···';if(pEl)pEl.textContent='···';if(lEl)lEl.textContent='···';
+  const data=await monFetchOne(a);
+  if(!S.monData)S.monData={};S.monData[id]=data;
+  const card=document.getElementById('moncard-'+id);if(card)card.outerHTML=monCardHTML(a,data);
+}
+async function monRefreshAll(){
+  const btn=document.getElementById('mon-refresh-btn');if(btn){btn.disabled=true;}
+  if(!S.monData)S.monData={};renderMonGrid();
+  await Promise.allSettled(S.accounts.map(a=>monRefreshOne(a.id)));
+  document.getElementById('mon-last-update').textContent=`Atualizado ${new Date().toLocaleTimeString('pt-BR')}`;
+  if(btn){btn.disabled=false;}
+}
+function monToggleAuto(on){
+  if(monAutoTimer){clearInterval(monAutoTimer);monAutoTimer=null;}
+  if(on){const sec=parseInt(document.getElementById('mon-interval').value)||60;monAutoTimer=setInterval(()=>monRefreshAll(),sec*1000);}
+}
+function monSetInterval(){const isOn=document.getElementById('mon-auto-toggle').checked;if(isOn)monToggleAuto(true);}
+
+// ── LOOP A ───────────────────────────────────────────────────────
+let loopState={running:false,timer:null,nextAt:null,todayCount:0,todayCountPerAcc:{},todayDate:null,urlIndexPerAcc:{}};
+function loopLog(msg,type='info'){
+  const el=document.getElementById('loop-log');
+  document.getElementById('loop-log-empty').style.display='none';
+  const d=document.createElement('div');d.className='log-entry '+type;
+  d.textContent=`[${new Date().toLocaleTimeString('pt-BR')}] ${msg}`;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+function loopGetUrls(){return document.getElementById('loop-urls').value.split('\n').map(s=>s.trim()).filter(s=>s.startsWith('http'));}
+function loopGetSelected(){return S.accounts.filter(a=>document.getElementById('loop-chk-'+a.id)?.checked);}
+function loopSelAll(){S.accounts.forEach(a=>{const c=document.getElementById('loop-chk-'+a.id);if(c){c.checked=true;c.closest('.check-item').classList.add('checked');}});}
+function loopSelNone(){S.accounts.forEach(a=>{const c=document.getElementById('loop-chk-'+a.id);if(c){c.checked=false;c.closest('.check-item').classList.remove('checked');}});}
+function renderLoopAccCL(){
+  const cl=document.getElementById('loop-acc-cl');if(!cl)return;
+  if(!S.accounts.length){cl.innerHTML='<p style="font-size:12px;color:var(--text3)">Nenhuma conta.</p>';return;}
+  cl.innerHTML=S.accounts.map(a=>`
+    <label class="check-item">
+      <input type="checkbox" id="loop-chk-${a.id}" checked onchange="this.closest('.check-item').classList.toggle('checked',this.checked)">
+      <div class="avatar" style="width:26px;height:26px;font-size:9px">${ini(a.name)}</div>
+      <div><div class="ci-name">${esc(a.name)}</div><div class="ci-user">@${esc(a.username||'—')}</div></div>
+    </label>`).join('');
+  document.querySelectorAll('#loop-acc-cl .check-item input:checked').forEach(cb=>cb.closest('.check-item').classList.add('checked'));
+}
+function loopUpdateUI(){
+  const today=new Date().toDateString();
+  if(loopState.todayDate!==today){loopState.todayCount=0;loopState.todayCountPerAcc={};loopState.todayDate=today;}
+  const accs=loopGetSelected(),limit=parseInt(document.getElementById('loop-daily-limit').value)||50;
+  const total=Math.max(accs.length,1)*limit;
+  const pct=Math.min(100,Math.round((loopState.todayCount/total)*100));
+  document.getElementById('loop-count-today').textContent=loopState.todayCount;
+  document.getElementById('loop-prog-lbl').textContent=`${loopState.todayCount} / ${total}`;
+  document.getElementById('loop-prog-f').style.width=pct+'%';
+  const dot=document.getElementById('loop-dot');
+  if(loopState.running){dot.classList.add('active');document.getElementById('loop-status-txt').textContent='🚀 Loop A ativo';
+    if(loopState.nextAt){const diff=Math.max(0,Math.round((loopState.nextAt-Date.now())/1000));document.getElementById('loop-next-txt').textContent=`Próximo lote em ${Math.floor(diff/60)}m ${diff%60}s`;}
+  }else{dot.classList.remove('active');document.getElementById('loop-status-txt').textContent='Loop A inativo';document.getElementById('loop-next-txt').textContent='—';}
+  document.getElementById('loop-start-btn').disabled=loopState.running;
+  document.getElementById('loop-stop-btn').disabled=!loopState.running;
+}
+async function loopRunBatch(){
+  if(!loopState.running)return;
+  const today=new Date().toDateString();
+  if(loopState.todayDate!==today){loopState.todayCount=0;loopState.todayCountPerAcc={};loopState.todayDate=today;loopState.urlIndexPerAcc={};}
+  const limit=parseInt(document.getElementById('loop-daily-limit').value)||50;
+  const perHour=parseInt(document.getElementById('loop-per-hour').value)||4;
+  const postType=document.getElementById('loop-type').value;
+  const capLines=document.getElementById('loop-cap').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  const pickCap=()=>capLines.length?capLines[Math.floor(Math.random()*capLines.length)]:'';
+  const staggerMode=document.getElementById('loop-stagger-mode').value;
+  const staggerDelay=i=>{if(staggerMode==='fixed')return 15000;if(staggerMode==='random')return(Math.floor(Math.random()*10)+8)*60000;return[10,12,15,18,22,26,30][Math.min(i,6)]*60000;};
+  const accs=loopGetSelected(),urls=loopGetUrls();
+  if(!accs.length||!urls.length){loopStop();return;}
+  const accsActive=accs.filter(a=>(loopState.todayCountPerAcc[a.id]||0)<limit);
+  if(!accsActive.length){loopLog('✅ Limite diário atingido.','success');loopStop();return;}
+  loopLog(`📦 Lote: ${perHour}×${accsActive.length} contas`,'info');
+  async function publishForAcc(acc){
+    const countStart=loopState.todayCountPerAcc[acc.id]||0;const toPost=Math.min(perHour,limit-countStart);
+    for(let i=0;i<toPost;i++){
+      if(!loopState.running)break;
+      if(i>0){const delay=staggerDelay(i);loopLog(`⏳ @${acc.username} · aguardando ${Math.round(delay/60000)}min...`,'info');loopState.nextAt=Date.now()+delay;loopUpdateUI();await new Promise(r=>setTimeout(r,delay));if(!loopState.running)break;}
+      if(loopState.urlIndexPerAcc[acc.id]===undefined)loopState.urlIndexPerAcc[acc.id]=0;
+      const url=urls[loopState.urlIndexPerAcc[acc.id]%urls.length];loopState.urlIndexPerAcc[acc.id]++;
+      const entry={id:uid(),accId:acc.id,accName:acc.name,accUser:acc.username,type:postType,url,cap:pickCap(),rCover:'',schedAt:null,status:'pending',createdAt:Date.now(),err:null};
+      S.queue.push(entry);save();loopLog(`🚀 @${acc.username} · post ${(loopState.todayCountPerAcc[acc.id]||0)+1}/${limit}`,'info');updStatus(entry.id,'publishing');
+      try{await pubOne(entry);updStatus(entry.id,'done');loopState.todayCountPerAcc[acc.id]=(loopState.todayCountPerAcc[acc.id]||0)+1;loopState.todayCount++;loopLog(`✅ @${acc.username}: ${loopState.todayCountPerAcc[acc.id]}/${limit}`,'success');}
+      catch(err){updStatus(entry.id,'error',err.message);loopLog(`❌ @${acc.username}: ${err.message}`,'error');}
+      loopUpdateUI();renderStats();
+    }
+  }
+  await Promise.all(accsActive.map(acc=>publishForAcc(acc)));
+  if(!loopState.running)return;
+  const still=accs.filter(a=>(loopState.todayCountPerAcc[a.id]||0)<limit);
+  if(!still.length){loopLog('🎯 Limite atingido em todas as contas!','success');loopStop();return;}
+  const intervalMs=60*60*1000;loopState.nextAt=Date.now()+intervalMs;
+  loopLog(`⏰ Próximo lote em 1h · ${still.length} conta(s)`,'info');
+  loopState.timer=setTimeout(()=>loopRunBatch(),intervalMs);
+  const ticker=setInterval(()=>{if(!loopState.running){clearInterval(ticker);return;}loopUpdateUI();},5000);
+}
+function loopStart(){
+  const urls=loopGetUrls(),accs=loopGetSelected();
+  if(!urls.length){toast('Adicione ao menos uma URL.','error');return;}
+  if(!accs.length){toast('Selecione ao menos uma conta.','error');return;}
+  loopState.running=true;loopState.todayDate=new Date().toDateString();loopState.todayCountPerAcc={};loopState.urlIndexPerAcc={};
+  const limit=parseInt(document.getElementById('loop-daily-limit').value)||50;
+  const today=new Date().toDateString();
+  accs.forEach(a=>{loopState.todayCountPerAcc[a.id]=S.queue.filter(q=>q.status==='done'&&q.accId===a.id&&new Date(q.createdAt).toDateString()===today).length;});
+  loopState.todayCount=accs.reduce((s,a)=>s+(loopState.todayCountPerAcc[a.id]||0),0);
+  if(accs.every(a=>(loopState.todayCountPerAcc[a.id]||0)>=limit)){toast('Todas as contas já atingiram o limite hoje.','error');loopState.running=false;return;}
+  loopLog('▶ Loop A iniciado!','success');loopUpdateUI();loopRunBatch();
+}
+function loopStop(){loopState.running=false;if(loopState.timer){clearTimeout(loopState.timer);loopState.timer=null;}loopState.nextAt=null;loopLog('⏹ Loop A parado.','warn');loopUpdateUI();}
+
+// ── LOOP B ───────────────────────────────────────────────────────
+let loopbState={running:false,timer:null,nextAt:null,todayCount:0,todayCountPerAcc:{},todayDate:null,urlIndexPerAcc:{},ticker:null};
+function loopbLog(msg,type='info'){
+  const el=document.getElementById('loopb-log');document.getElementById('loopb-log-empty').style.display='none';
+  const d=document.createElement('div');d.className='log-entry '+type;d.textContent=`[${new Date().toLocaleTimeString('pt-BR')}] ${msg}`;el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+function loopbGetUrls(){return document.getElementById('loopb-urls').value.split('\n').map(s=>s.trim()).filter(s=>s.startsWith('http'));}
+function loopbGetSelected(){return S.accounts.filter(a=>document.getElementById('loopb-chk-'+a.id)?.checked);}
+function loopbSelAll(){S.accounts.forEach(a=>{const c=document.getElementById('loopb-chk-'+a.id);if(c){c.checked=true;c.closest('.check-item').classList.add('checked');}});}
+function loopbSelNone(){S.accounts.forEach(a=>{const c=document.getElementById('loopb-chk-'+a.id);if(c){c.checked=false;c.closest('.check-item').classList.remove('checked');}});}
+function renderLoopbAccCL(){
+  const cl=document.getElementById('loopb-acc-cl');if(!cl)return;
+  if(!S.accounts.length){cl.innerHTML='<p style="font-size:12px;color:var(--text3)">Nenhuma conta.</p>';return;}
+  cl.innerHTML=S.accounts.map(a=>`
+    <label class="check-item">
+      <input type="checkbox" id="loopb-chk-${a.id}" checked onchange="this.closest('.check-item').classList.toggle('checked',this.checked)">
+      <div class="avatar" style="width:26px;height:26px;font-size:9px">${ini(a.name)}</div>
+      <div><div class="ci-name">${esc(a.name)}</div><div class="ci-user">@${esc(a.username||'—')}</div></div>
+    </label>`).join('');
+  document.querySelectorAll('#loopb-acc-cl .check-item input:checked').forEach(cb=>cb.closest('.check-item').classList.add('checked'));
+}
+function loopbUpdateUI(){
+  const today=new Date().toDateString();
+  if(loopbState.todayDate!==today){loopbState.todayCount=0;loopbState.todayCountPerAcc={};loopbState.todayDate=today;}
+  const accs=loopbGetSelected(),totalMeta=Math.max(accs.length,1)*10;
+  const pct=Math.min(100,Math.round((loopbState.todayCount/totalMeta)*100));
+  document.getElementById('loopb-count-today').textContent=loopbState.todayCount;
+  document.getElementById('loopb-prog-lbl').textContent=`${loopbState.todayCount} / ${totalMeta}`;
+  document.getElementById('loopb-prog-f').style.width=pct+'%';
+  const dot=document.getElementById('loopb-dot');
+  if(loopbState.running){dot.classList.add('active-b');document.getElementById('loopb-status-txt').textContent='🌱 Loop B ativo';
+    if(loopbState.nextAt){const diff=Math.max(0,Math.round((loopbState.nextAt-Date.now())/1000));document.getElementById('loopb-next-txt').textContent=`Próximo ciclo em ${Math.floor(diff/60)}m ${diff%60}s`;}
+  }else{dot.classList.remove('active-b');document.getElementById('loopb-status-txt').textContent='Loop B inativo';document.getElementById('loopb-next-txt').textContent='—';}
+  document.getElementById('loopb-start-btn').disabled=loopbState.running;
+  document.getElementById('loopb-stop-btn').disabled=!loopbState.running;
+}
+async function loopbRunBatch(){
+  if(!loopbState.running)return;
+  const today=new Date().toDateString();
+  if(loopbState.todayDate!==today){loopbState.todayCount=0;loopbState.todayCountPerAcc={};loopbState.todayDate=today;loopbState.urlIndexPerAcc={};}
+  const urls=loopbGetUrls(),accs=loopbGetSelected();
+  const mediaType=document.getElementById('loopb-type').value;
+  const caps=document.getElementById('loopb-cap').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const pickCap=()=>caps.length?caps[Math.floor(Math.random()*caps.length)]:'';
+  if(!accs.length||!urls.length){loopbStop();return;}
+  const accsActive=accs.filter(a=>(loopbState.todayCountPerAcc[a.id]||0)<10);
+  if(!accsActive.length){loopbLog('🎯 Todas as contas atingiram 10 posts hoje!','success');loopbStop();return;}
+  loopbLog(`--- Ciclo: ${accsActive.length} conta(s) em paralelo ---`,'info');
+  await Promise.allSettled(accsActive.map(async acc=>{
+    if(!loopbState.running)return;
+    if(loopbState.urlIndexPerAcc[acc.id]===undefined)loopbState.urlIndexPerAcc[acc.id]=0;
+    const url=urls[loopbState.urlIndexPerAcc[acc.id]%urls.length];loopbState.urlIndexPerAcc[acc.id]++;
+    const entry={id:uid(),accId:acc.id,accName:acc.name,accUser:acc.username,type:mediaType,url,cap:pickCap(),rCover:'',schedAt:null,status:'pending',createdAt:Date.now(),err:null};
+    S.queue.push(entry);save();
+    loopbLog(`📤 @${acc.username} · post ${(loopbState.todayCountPerAcc[acc.id]||0)+1}/10`,'info');updStatus(entry.id,'publishing');
+    try{await pubOne(entry);updStatus(entry.id,'done');loopbState.todayCountPerAcc[acc.id]=(loopbState.todayCountPerAcc[acc.id]||0)+1;loopbState.todayCount++;loopbLog(`✅ @${acc.username}: ${loopbState.todayCountPerAcc[acc.id]}/10`,'success');}
+    catch(err){updStatus(entry.id,'error',err.message);loopbLog(`❌ @${acc.username}: ${err.message}`,'error');}
+  }));
+  loopbUpdateUI();renderStats();
+  if(!loopbState.running)return;
+  const still=accs.filter(a=>(loopbState.todayCountPerAcc[a.id]||0)<10);
+  if(!still.length){loopbLog('🎯 Loop B concluído!','success');loopbStop();return;}
+  const intervalMs=60*60*1000;loopbState.nextAt=Date.now()+intervalMs;
+  loopbLog(`⏰ Próximo ciclo em 1h · ${still.length} conta(s) ativas`,'info');
+  loopbState.timer=setTimeout(()=>loopbRunBatch(),intervalMs);
+  if(loopbState.ticker)clearInterval(loopbState.ticker);
+  loopbState.ticker=setInterval(()=>{if(!loopbState.running){clearInterval(loopbState.ticker);return;}loopbUpdateUI();},5000);
+}
+function loopbStart(){
+  const urls=loopbGetUrls(),accs=loopbGetSelected();
+  if(!urls.length){toast('Adicione ao menos uma URL.','error');return;}
+  if(!accs.length){toast('Selecione ao menos uma conta.','error');return;}
+  loopbState.running=true;loopbState.todayDate=new Date().toDateString();loopbState.todayCountPerAcc={};loopbState.urlIndexPerAcc={};
+  const today=new Date().toDateString();
+  accs.forEach(a=>{loopbState.todayCountPerAcc[a.id]=S.queue.filter(q=>q.status==='done'&&q.accId===a.id&&new Date(q.createdAt).toDateString()===today).length;});
+  loopbState.todayCount=accs.reduce((s,a)=>s+(loopbState.todayCountPerAcc[a.id]||0),0);
+  if(accs.every(a=>(loopbState.todayCountPerAcc[a.id]||0)>=10)){toast('Todas as contas já atingiram 10 posts hoje.','error');loopbState.running=false;return;}
+  loopbLog(`▶ Loop B iniciado — ${accs.length} conta(s)`, 'success');loopbUpdateUI();loopbRunBatch();
+}
+function loopbStop(){loopbState.running=false;if(loopbState.timer){clearTimeout(loopbState.timer);loopbState.timer=null;}if(loopbState.ticker){clearInterval(loopbState.ticker);loopbState.ticker=null;}loopbState.nextAt=null;loopbLog('⏹ Loop B parado.','warn');loopbUpdateUI();}
+
+// ── LOOP TABS ────────────────────────────────────────────────────
+function switchLoopTab(tab){
+  document.getElementById('loop-tab-a').style.display=tab==='a'?'block':'none';
+  document.getElementById('loop-tab-b').style.display=tab==='b'?'block':'none';
+  document.getElementById('tab-a-btn').className=tab==='a'?'btn btn-primary':'btn btn-secondary';
+  document.getElementById('tab-b-btn').className=tab==='b'?'btn btn-primary':'btn btn-secondary';
+  if(tab==='b'){renderLoopbAccCL();loopbUpdateUI();}else{renderLoopAccCL();loopUpdateUI();}
+  document.getElementById('tab-a-btn').style.flex='1';
+  document.getElementById('tab-b-btn').style.flex='1';
+}
+
+// ── TOAST ────────────────────────────────────────────────────────
+function toast(msg,type='info'){
+  const c=document.getElementById('toasts');
+  const t=document.createElement('div');t.className=`toast ${type}`;
+  t.textContent=msg;c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);},3000);
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function uid(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
+function tIcon(t){return t==='REELS'?'🎬':t==='STORIES'?'⚡':'📷';}
+function fmtD(ts){if(!ts)return'—';return new Date(ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
+function sSty(s){return{scheduled:'badge-blue',pending:'badge-blue',publishing:'badge-yellow',done:'badge-green',error:'badge-red'}[s]||'badge-purple';}
+function sLbl(s){return{scheduled:'Agendado',pending:'Pendente',publishing:'Publicando',done:'Publicado',error:'Erro'}[s]||s;}
+</script>
+</body>
+</html>
