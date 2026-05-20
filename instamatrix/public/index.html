@@ -1081,8 +1081,8 @@ function connectStep1(){
   const name=document.getElementById('c-name').value.trim();
   if(!appId||!secret||!redirect||!name){toast('Preencha todos os campos.','error');return;}
   connectTemp={appId,secret,redirect,name,token:''};
-  const scope='instagram_basic,instagram_content_publish,instagram_manage_insights,pages_show_list,pages_read_engagement,business_management';
-  const oauthUrl=`https://www.facebook.com/v19.0/dialog/oauth?client_id=${encodeURIComponent(appId)}&redirect_uri=${encodeURIComponent(redirect)}&scope=${encodeURIComponent(scope)}&response_type=code`;
+  const scope='instagram_basic,instagram_content_publish,instagram_manage_insights';
+  const oauthUrl=`https://api.instagram.com/oauth/authorize?client_id=${encodeURIComponent(appId)}&redirect_uri=${encodeURIComponent(redirect)}&scope=${encodeURIComponent(scope)}&response_type=code`;
   document.getElementById('c-oauth-url').value=oauthUrl;
   document.getElementById('connect-p1').style.display='none';
   document.getElementById('connect-p2').style.display='block';
