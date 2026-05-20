@@ -1,7 +1,3 @@
-// netlify/functions/oauth-token.js
-// Troca o "code" OAuth pelo Access Token de forma segura no servidor.
-// O APP_SECRET nunca é exposto ao browser.
-
 export const handler = async (event) => {
   const CORS = {
     "Access-Control-Allow-Origin": "*",
@@ -13,76 +9,46 @@ export const handler = async (event) => {
     return { statusCode: 204, headers: CORS, body: "" };
   }
 
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: "Método não permitido" }) };
-  }
-
   try {
     const { code, redirect_uri, app_id } = JSON.parse(event.body || "{}");
-
-    if (!code || !redirect_uri || !app_id) {
-      return {
-        statusCode: 400,
-        headers: CORS,
-        body: JSON.stringify({ error: "Parâmetros obrigatórios: code, redirect_uri, app_id" }),
-      };
-    }
-
-    // O APP_SECRET vem das variáveis de ambiente da Netlify (nunca do frontend)
     const appSecret = process.env.META_APP_SECRET;
-    if (!appSecret) {
-      return {
-        statusCode: 500,
-        headers: CORS,
-        body: JSON.stringify({ error: "META_APP_SECRET não configurado nas variáveis de ambiente da Netlify." }),
-      };
-    }
 
-    const url = new URL("https://api.instagram.com/oauth/access_token");
-    url.searchParams.set("client_id", app_id);
-    url.searchParams.set("redirect_uri", redirect_uri);
-    url.searchParams.set("client_secret", appSecret);
-    url.searchParams.set("code", code);
+    const params = new URLSearchParams();
+    params.append("client_id", app_id);
+    params.append("client_secret", appSecret);
+    params.append("grant_type", "authorization_code");
+    params.append("redirect_uri", redirect_uri);
+    params.append("code", code);
 
-    const response = await fetch(url.toString());
-    const data = await response.json();
+    const r = await fetch("https://api.instagram.com/oauth/access_token", {
+      method: "POST",
+      body: params,
+    });
+    const d = await r.json();
 
-    if (data.error) {
-      return {
-        statusCode: 400,
-        headers: CORS,
-        body: JSON.stringify({ error: data.error.message, code: data.error.code }),
-      };
-    }
+    if (d.error_type) throw new Error(d.error_message);
+    if (!d.access_token) throw new Error("Token não recebido");
 
-    // Troca o short-lived token pelo long-lived token (60 dias)
-    const longUrl = new URL("https://api.instagram.com/oauth/access_token");
-    longUrl.searchParams.set("grant_type", "fb_exchange_token");
-    longUrl.searchParams.set("client_id", app_id);
-    longUrl.searchParams.set("client_secret", appSecret);
-    longUrl.searchParams.set("fb_exchange_token", data.access_token);
-
-    const longRes = await fetch(longUrl.toString());
-    const longData = await longRes.json();
-
-    const finalToken = longData.access_token || data.access_token;
-    const expiresIn = longData.expires_in || data.expires_in || null;
+    // Troca por long-lived token
+    const longUrl = `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${d.access_token}`;
+    const longR = await fetch(longUrl);
+    const longD = await longR.json();
 
     return {
       statusCode: 200,
       headers: CORS,
       body: JSON.stringify({
-        access_token: finalToken,
-        token_type: "bearer",
-        expires_in: expiresIn,
-        long_lived: !!longData.access_token,
+        access_token: longD.access_token || d.access_token,
+        user_id: d.user_id,
+        long_lived: !!longD.access_token,
+        expires_in: longD.expires_in || null,
       }),
     };
   } catch (err) {
     return {
       statusCode: 500,
       headers: CORS,
-      body: JSON.stringify({ error: "Erro interno: " + err.message }),
+      body: JSON.stringify({ error: err.message }),
     };
   }
 };
