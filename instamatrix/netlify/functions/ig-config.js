@@ -13,8 +13,8 @@ exports.handler = async (event) => {
     statusCode: 200,
     headers: { ...CORS, "Content-Type": "application/json" },
     body: JSON.stringify({
-      app_id: process.env.INSTAGRAM_APP_ID,
-      redirect_uri: process.env.INSTAGRAM_REDIRECT_URI
+      appId: process.env.INSTAGRAM_APP_ID,
+      redirectUri: process.env.INSTAGRAM_REDIRECT_URI
     })
   };
-}; 
+};

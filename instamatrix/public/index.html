@@ -1080,7 +1080,7 @@ async function connectStep1(){
     const d=await r.json();
     if(d.error)throw new Error(d.error);
     connectTemp={appId:d.appId,redirect:d.redirectUri,name,token:''};
-    const scope='instagram_basic,instagram_content_publish';
+    const scope='instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages,instagram_business_
     const oauthUrl=`https://api.instagram.com/oauth/authorize?force_reauth=true&enable_fb_login=0&client_id=${encodeURIComponent(d.appId)}&redirect_uri=${encodeURIComponent(d.redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
     document.getElementById('c-oauth-url').value=oauthUrl;
     document.getElementById('connect-p1').style.display='none';
