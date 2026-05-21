@@ -722,7 +722,7 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
       <button class="modal-close" onclick="closeModal('modal-connect')">✕</button>
     </div>
     <div class="connect-steps">
-      <div class="step-item"><div class="step-num active" id="cstep-1">1</div><div class="step-label">App ID</div></div>
+      <div class="step-item"><div class="step-num active" id="cstep-1">1</div><div class="step-label">Nome</div></div>
       <div class="step-item"><div class="step-num" id="cstep-2">2</div><div class="step-label">OAuth</div></div>
       <div class="step-item"><div class="step-num" id="cstep-3">3</div><div class="step-label">Token</div></div>
     </div>
@@ -730,12 +730,10 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
     <!-- Passo 1 -->
     <div id="connect-p1">
       <div class="oauth-info">
-        <p>Você precisará do <code>App ID</code> e <code>App Secret</code> do seu app no <strong>developers.facebook.com</strong>. A URL de callback deve estar registrada nas configurações do app.</p>
+        <p>O app já está configurado no servidor. Basta dar um nome para a conta e clicar em conectar.</p>
       </div>
-      <div class="fg"><label class="label">App ID <span>*</span></label><input type="text" id="c-appid" placeholder="1234567890123456"></div>
-      <div class="fg"><label class="label">App Secret <span>*</span></label><input type="password" id="c-secret" placeholder="••••••••••••••••••••••••••••••••"></div>
-      <div class="fg"><label class="label">URL de Callback / Redirect URI <span>*</span></label><input type="url" id="c-redirect" placeholder="https://seuapp.netlify.app/"></div>
       <div class="fg"><label class="label">Nome de exibição <span>*</span></label><input type="text" id="c-name" placeholder="Ex: Loja Principal"></div>
+      <div id="connect-cfg-err" style="display:none;color:var(--red);font-size:12px;padding:8px;background:var(--red-dim);border-radius:8px;margin-bottom:12px"></div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('modal-connect')">Cancelar</button>
         <button class="btn btn-primary" onclick="connectStep1()">
@@ -771,10 +769,9 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
     <!-- Passo 3 -->
     <div id="connect-p3" style="display:none">
       <div class="oauth-info" style="background:var(--green-dim);border-color:rgba(16,185,129,.25)">
-        <p style="color:var(--green)">✅ Token obtido com sucesso! Informe o <code>Instagram Business Account ID</code> para concluir.</p>
+        <p style="color:var(--green)">✅ Token obtido com sucesso! Informe o <code>@username</code> para concluir.</p>
       </div>
       <div class="fg"><label class="label">Access Token gerado</label><input type="text" id="c-token-disp" readonly style="font-family:var(--mono);font-size:11px;color:var(--accent2)"></div>
-      <div class="fg"><label class="label">Instagram Business Account ID <span>*</span></label><input type="text" id="c-igid" placeholder="17841xxxxxxxxx"></div>
       <div class="fg"><label class="label">@username <span>opcional</span></label><input type="text" id="c-username" placeholder="seuperfil"></div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="connectGoP1()">Recomeçar</button>
@@ -1074,19 +1071,22 @@ function setConnectStep(n){
     el.className='step-num'+(i<n?' done':i===n?' active':'');
   }
 }
-function connectStep1(){
-  const appId=document.getElementById('c-appid').value.trim();
-  const secret=document.getElementById('c-secret').value.trim();
-  const redirect=document.getElementById('c-redirect').value.trim();
+async function connectStep1(){
   const name=document.getElementById('c-name').value.trim();
-  if(!appId||!secret||!redirect||!name){toast('Preencha todos os campos.','error');return;}
-  connectTemp={appId,secret,redirect,name,token:''};
-  const scope='instagram_basic,instagram_content_publish';
-  const oauthUrl=`https://api.instagram.com/oauth/authorize?client_id=${encodeURIComponent(appId)}&redirect_uri=${encodeURIComponent(redirect)}&scope=${encodeURIComponent(scope)}&response_type=code`;
-  document.getElementById('c-oauth-url').value=oauthUrl;
-  document.getElementById('connect-p1').style.display='none';
-  document.getElementById('connect-p2').style.display='block';
-  setConnectStep(2);
+  if(!name){toast('Digite um nome para a conta.','error');return;}
+  toast('Conectando ao servidor...','info');
+  try{
+    const r=await fetch(`${API_BASE}/ig-config`);
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    connectTemp={appId:d.appId,redirect:d.redirectUri,name,token:''};
+    const scope='instagram_basic,instagram_content_publish';
+    const oauthUrl=`https://api.instagram.com/oauth/authorize?force_reauth=true&enable_fb_login=0&client_id=${encodeURIComponent(d.appId)}&redirect_uri=${encodeURIComponent(d.redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
+    document.getElementById('c-oauth-url').value=oauthUrl;
+    document.getElementById('connect-p1').style.display='none';
+    document.getElementById('connect-p2').style.display='block';
+    setConnectStep(2);
+  }catch(e){toast('Erro ao carregar configuração: '+e.message,'error');}
 }
 function copyOAuthUrl(){
   navigator.clipboard.writeText(document.getElementById('c-oauth-url').value).then(()=>toast('Link copiado!','success'));
