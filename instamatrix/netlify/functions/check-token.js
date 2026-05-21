@@ -15,32 +15,52 @@ export const handler = async (event) => {
   try {
     const { access_token, ig_id } = JSON.parse(event.body || "{}");
 
-    if (!access_token || !ig_id) {
+    if (!access_token) {
       return {
         statusCode: 400,
         headers: CORS,
-        body: JSON.stringify({ error: "access_token e ig_id são obrigatórios" }),
+        body: JSON.stringify({ error: "access_token é obrigatório" }),
       };
     }
 
-    // Verifica o token e busca info da conta
-    const url = `https://graph.facebook.com/v19.0/${ig_id}?fields=id,username,name,followers_count,media_count&access_token=${encodeURIComponent(access_token)}`;
-    const response = await fetch(url);
-    const data = await response.json();
+    // Se não tem ig_id, busca pelo token diretamente
+    const meUrl = `https://graph.instagram.com/v19.0/me?fields=id,username,name,followers_count,media_count&access_token=${encodeURIComponent(access_token)}`;
+    const meRes = await fetch(meUrl);
+    const meData = await meRes.json();
 
-    if (data.error) {
+    if (meData.error) {
+      // Tenta com graph.facebook.com se ig falhar
+      const resolvedId = ig_id || 'me';
+      const url = `https://graph.facebook.com/v19.0/${resolvedId}?fields=id,username,name,followers_count,media_count&access_token=${encodeURIComponent(access_token)}`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.error) {
+        return {
+          statusCode: 400,
+          headers: CORS,
+          body: JSON.stringify({ valid: false, error: data.error.message, error_code: data.error.code }),
+        };
+      }
+
+      // Verifica expiração do token
+      const debugUrl = `https://graph.facebook.com/v19.0/debug_token?input_token=${encodeURIComponent(access_token)}&access_token=${encodeURIComponent(access_token)}`;
+      const debugRes = await fetch(debugUrl);
+      const debugData = await debugRes.json();
+      const tokenInfo = debugData.data || {};
+
       return {
-        statusCode: 400,
+        statusCode: 200,
         headers: CORS,
         body: JSON.stringify({
-          valid: false,
-          error: data.error.message,
-          error_code: data.error.code,
+          valid: true,
+          account: { id: data.id, username: data.username, name: data.name, followers: data.followers_count, media_count: data.media_count },
+          token: { expires_at: tokenInfo.expires_at ? new Date(tokenInfo.expires_at * 1000).toISOString() : null, is_valid: tokenInfo.is_valid !== false, scopes: tokenInfo.scopes || [] },
         }),
       };
     }
 
-    // Verifica expiração do token
+    // Sucesso com graph.instagram.com
     const debugUrl = `https://graph.facebook.com/v19.0/debug_token?input_token=${encodeURIComponent(access_token)}&access_token=${encodeURIComponent(access_token)}`;
     const debugRes = await fetch(debugUrl);
     const debugData = await debugRes.json();
@@ -51,18 +71,8 @@ export const handler = async (event) => {
       headers: CORS,
       body: JSON.stringify({
         valid: true,
-        account: {
-          id: data.id,
-          username: data.username,
-          name: data.name,
-          followers: data.followers_count,
-          media_count: data.media_count,
-        },
-        token: {
-          expires_at: tokenInfo.expires_at ? new Date(tokenInfo.expires_at * 1000).toISOString() : null,
-          is_valid: tokenInfo.is_valid !== false,
-          scopes: tokenInfo.scopes || [],
-        },
+        account: { id: meData.id, username: meData.username, name: meData.name, followers: meData.followers_count, media_count: meData.media_count },
+        token: { expires_at: tokenInfo.expires_at ? new Date(tokenInfo.expires_at * 1000).toISOString() : null, is_valid: tokenInfo.is_valid !== false, scopes: tokenInfo.scopes || [] },
       }),
     };
   } catch (err) {
