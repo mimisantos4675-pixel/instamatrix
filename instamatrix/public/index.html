@@ -1118,8 +1118,10 @@ async function connectStep2(){
       const ur=await fetch(`${API_BASE}/check-token`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({access_token:d.access_token})});
       const ud=await ur.json();
       const username=ud.account?.username||'';
+      const igId=ud.account?.id||'';
+      if(!igId){toast('Não foi possível obter o ID da conta. Tente novamente.','error');return;}
       if(S.accounts.length>=25){toast('Limite de 25 contas.','error');return;}
-      S.accounts.push({id:uid(),name:connectTemp.name,username,token:connectTemp.token,igId:ud.account?.id||''});
+      S.accounts.push({id:uid(),name:connectTemp.name,username,token:connectTemp.token,igId});
       save();renderAll();closeModal('modal-connect');
       toast(`Conta "${connectTemp.name}" conectada com sucesso!`,'success');
     }catch(e2){
