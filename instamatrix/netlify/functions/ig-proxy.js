@@ -1,7 +1,5 @@
 // netlify/functions/ig-proxy.js
 // Proxy seguro para chamadas à Instagram Graph API.
-// Repassa a requisição ao Meta e devolve a resposta.
-// Isso evita bloqueios de CORS e mantém os tokens do lado do servidor.
 
 export const handler = async (event) => {
   const CORS = {
@@ -25,20 +23,25 @@ export const handler = async (event) => {
       };
     }
 
-    // Garante que o path começa com /
     const cleanPath = path.startsWith("/") ? path : `/${path}`;
-    const apiUrl = `https://graph.facebook.com/v19.0${cleanPath}`;
+    
+    // Detecta o token para escolher a URL base correta
+    const token = reqBody?.access_token || '';
+    // Tokens IGAASpZ são da API Instagram básica, usar graph.instagram.com
+    // Tokens EAA são do Facebook Graph API
+    const baseUrl = token.startsWith('IGAAS') || token.startsWith('IGAASpZ') 
+      ? `https://graph.instagram.com/v19.0${cleanPath}`
+      : `https://graph.facebook.com/v19.0${cleanPath}`;
 
     let fetchOptions;
 
     if (method === "GET") {
-      // Para polling do status do container
       const queryString = reqBody
         ? Object.entries(reqBody)
             .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
             .join("&")
         : "";
-      const fullUrl = queryString ? `${apiUrl}?${queryString}` : apiUrl;
+      const fullUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
       fetchOptions = { method: "GET" };
       const response = await fetch(fullUrl, fetchOptions);
       const data = await response.json();
@@ -48,13 +51,12 @@ export const handler = async (event) => {
         body: JSON.stringify(data),
       };
     } else {
-      // POST para criar container ou publicar
       fetchOptions = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(reqBody || {}),
       };
-      const response = await fetch(apiUrl, fetchOptions);
+      const response = await fetch(baseUrl, fetchOptions);
       const data = await response.json();
       return {
         statusCode: response.status,
