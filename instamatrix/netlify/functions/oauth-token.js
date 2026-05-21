@@ -14,7 +14,7 @@ export const handler = async (event) => {
     const { code, redirect_uri, app_id } = JSON.parse(event.body || "{}");
     const appSecret = process.env.META_APP_SECRET;
 
-    // Troca code por short-lived token via nova API business
+    // Troca code por short-lived token
     const params = new URLSearchParams();
     params.append("client_id", app_id);
     params.append("client_secret", appSecret);
@@ -31,8 +31,8 @@ export const handler = async (event) => {
     if (d.error_type) throw new Error(d.error_message);
     if (!d.access_token) throw new Error("Token não recebido");
 
-    // Troca por long-lived token via Graph API
-    const longUrl = `https://graph.facebook.com/v19.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${app_id}&client_secret=${appSecret}&fb_exchange_token=${d.access_token}`;
+    // Troca por long-lived token (60 dias) via graph.instagram.com
+    const longUrl = `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${d.access_token}`;
     const longR = await fetch(longUrl);
     const longD = await longR.json();
 
