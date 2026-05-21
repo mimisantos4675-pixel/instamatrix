@@ -1080,8 +1080,8 @@ async function connectStep1(){
     const d=await r.json();
     if(d.error)throw new Error(d.error);
     connectTemp={appId:d.appId,redirect:d.redirectUri,name,token:''};
-    const scope='instagram_basic,instagram_content_publish';
-    const oauthUrl=`https://api.instagram.com/oauth/authorize?force_reauth=true&enable_fb_login=0&client_id=${encodeURIComponent(d.appId)}&redirect_uri=${encodeURIComponent(d.redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
+    const scope='instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages,instagram_business_content_publish';
+    const oauthUrl=`https://www.instagram.com/oauth/authorize?client_id=${encodeURIComponent(d.appId)}&redirect_uri=${encodeURIComponent(d.redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}`;
     document.getElementById('c-oauth-url').value=oauthUrl;
     document.getElementById('connect-p1').style.display='none';
     document.getElementById('connect-p2').style.display='block';
@@ -1121,9 +1121,11 @@ async function connectStep2(){
   }catch(e){toast('Erro ao trocar code: '+e.message,'error');}
 }
 function connectFinish(){
+  const igId=document.getElementById('c-igid').value.trim();
   const username=document.getElementById('c-username').value.trim().replace('@','');
+  if(!igId){toast('Informe o Business Account ID.','error');return;}
   if(S.accounts.length>=25){toast('Limite de 25 contas.','error');return;}
-  S.accounts.push({id:uid(),name:connectTemp.name,username,token:connectTemp.token,igId:''});
+  S.accounts.push({id:uid(),name:connectTemp.name,username,token:connectTemp.token,igId});
   save();renderAll();closeModal('modal-connect');
   toast(`Conta "${connectTemp.name}" conectada!`,'success');
 }
