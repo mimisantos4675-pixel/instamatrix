@@ -1082,7 +1082,7 @@ function connectStep1(){
   if(!appId||!secret||!redirect||!name){toast('Preencha todos os campos.','error');return;}
   connectTemp={appId,secret,redirect,name,token:''};
   const scope='instagram_basic,instagram_content_publish';
-  const oauthUrl=`https://api.instagram.com/oauth/authorize?client_id=${encodeURIComponent(appId)}&redirect_uri=${encodeURIComponent(redirect)}&scope=${encodeURIComponent(scope)}&response_type=code`;
+  const oauthUrl=`https://api.instagram.com/oauth/authorize?force_reauth=true&enable_fb_login=0&client_id=${encodeURIComponent(apent(redirect)}&scope=${encodeURIComponent(scope)}&response_type=code`;
   document.getElementById('c-oauth-url').value=oauthUrl;
   document.getElementById('connect-p1').style.display='none';
   document.getElementById('connect-p2').style.display='block';
