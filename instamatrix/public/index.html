@@ -1112,20 +1112,30 @@ async function connectStep2(){
     if(d.error)throw new Error(d.error);
     if(!d.access_token)throw new Error('Token não recebido');
     connectTemp.token=d.access_token;
-    document.getElementById('c-token-disp').value=d.access_token;
-    document.getElementById('connect-p2').style.display='none';
-    document.getElementById('connect-p3').style.display='block';
-    setConnectStep(3);
-    const longMsg=d.long_lived?' (long-lived, 60 dias)':'';
-    toast('Token obtido'+longMsg+'! Informe o Business ID.','success');
+    // Auto-busca username e salva conta automaticamente
+    toast('Token obtido! Buscando dados da conta...','info');
+    try{
+      const ur=await fetch(`${API_BASE}/check-token`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({access_token:d.access_token})});
+      const ud=await ur.json();
+      const username=ud.account?.username||'';
+      if(S.accounts.length>=25){toast('Limite de 25 contas.','error');return;}
+      S.accounts.push({id:uid(),name:connectTemp.name,username,token:connectTemp.token,igId:ud.account?.id||''});
+      save();renderAll();closeModal('modal-connect');
+      toast(`Conta "${connectTemp.name}" conectada com sucesso!`,'success');
+    }catch(e2){
+      // Se falhar busca automatica, mostra step 3 manual
+      document.getElementById('c-token-disp').value=d.access_token;
+      document.getElementById('connect-p2').style.display='none';
+      document.getElementById('connect-p3').style.display='block';
+      setConnectStep(3);
+      toast('Token obtido! Clique em Salvar para concluir.','success');
+    }
   }catch(e){toast('Erro ao trocar code: '+e.message,'error');}
 }
 function connectFinish(){
-  const igId=document.getElementById('c-igid').value.trim();
   const username=document.getElementById('c-username').value.trim().replace('@','');
-  if(!igId){toast('Informe o Business Account ID.','error');return;}
   if(S.accounts.length>=25){toast('Limite de 25 contas.','error');return;}
-  S.accounts.push({id:uid(),name:connectTemp.name,username,token:connectTemp.token,igId});
+  S.accounts.push({id:uid(),name:connectTemp.name,username,token:connectTemp.token,igId:''});
   save();renderAll();closeModal('modal-connect');
   toast(`Conta "${connectTemp.name}" conectada!`,'success');
 }
